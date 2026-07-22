@@ -1,0 +1,34 @@
+connectors:
+  - id: local_file
+    label: arquivo local
+    fields: [path]
+  - id: postgres
+    label: PostgreSQL
+    fields: [host, port, database, schema, username, password]
+  - id: mysql
+    label: MySQL
+    fields: [host, port, database, username, password]
+  - id: mongodb
+    label: MongoDB
+    fields: [host, port, database, username, password]
+  - id: rest_api
+    label: REST API
+    fields: [base_url, auth_type, token]
+  - id: graphql_api
+    label: GraphQL API
+    fields: [endpoint, auth_type, token]
+  - id: object_storage
+    label: S3/GCS/Azure Blob
+    fields: [provider, bucket, region, access_key, secret_key]
+  - id: google_drive
+    label: Google Drive
+    fields: [folder_id, service_account_json]
+  - id: notion
+    label: Notion
+    fields: [workspace, token]
+  - id: confluence
+    label: Confluence
+    fields: [base_url, space_key, username, token]
+  - id: git_repository
+    label: Repositorio Git
+    fields: [url, branch]
