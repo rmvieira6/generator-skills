@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # SAI Library (production)
+      - SAI_API_KEY=${SAI_API_KEY:-}
+      - SAI_BASE_URL=${SAI_BASE_URL:-https://api.sai.stefanini.com/v1}
+      - SAI_MODEL=${SAI_MODEL:-auto}
+      # Fallback (local development only)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      # CORS – allow the Streamlit frontend
+      - CORS_ORIGINS=["http://localhost:8501","http://frontend:8501"]
+      - DEBUG=${DEBUG:-false}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
