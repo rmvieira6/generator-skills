@@ -47,10 +47,36 @@ def store_zip(zip_bytes: bytes) -> str:
     """
     token = str(uuid.uuid4())
     tmp_dir = _ensure_tmp_dir()
-    dest = tmp_dir / f"{token}.zip"
+    # Use _safe_zip_path to stay consistent with retrieve/delete validation
+    base = tmp_dir.resolve()
+    dest = (base / f"{token}.zip").resolve()
     dest.write_bytes(zip_bytes)
     logger.info("ZIP stored at %s (token=%s)", dest, token)
     return token
+
+
+def _safe_zip_path(token: str) -> Path | None:
+    """
+    Build a safe filesystem path for *token*.
+
+    Validates that *token* is a UUID4 string (limiting the character set) and
+    confirms the resolved path is within ``settings.tmp_dir`` to prevent any
+    path-traversal attack.  Returns ``None`` if either check fails.
+    """
+    try:
+        safe_token = str(uuid.UUID(token, version=4))
+    except ValueError:
+        return None
+
+    base = Path(settings.tmp_dir).resolve()
+    candidate = (base / f"{safe_token}.zip").resolve()
+
+    # Ensure the resolved path is strictly inside tmp_dir
+    if base not in candidate.parents:
+        logger.warning("Path-traversal attempt detected for token: %s", token)
+        return None
+
+    return candidate
 
 
 def retrieve_zip(token: str) -> bytes | None:
@@ -59,13 +85,10 @@ def retrieve_zip(token: str) -> bytes | None:
 
     Validates that the token is a valid UUID4 to prevent path traversal.
     """
-    try:
-        uuid.UUID(token, version=4)
-    except ValueError:
+    path = _safe_zip_path(token)
+    if path is None:
         logger.warning("Invalid token format: %s", token)
         return None
-
-    path = Path(settings.tmp_dir) / f"{token}.zip"
     if not path.exists():
         return None
     return path.read_bytes()
@@ -73,11 +96,9 @@ def retrieve_zip(token: str) -> bytes | None:
 
 def delete_zip(token: str) -> bool:
     """Delete the ZIP for *token*; returns True if the file existed."""
-    try:
-        uuid.UUID(token, version=4)
-    except ValueError:
+    path = _safe_zip_path(token)
+    if path is None:
         return False
-    path = Path(settings.tmp_dir) / f"{token}.zip"
     if path.exists():
         path.unlink()
         return True
