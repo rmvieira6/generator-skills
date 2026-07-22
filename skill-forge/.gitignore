@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Local envs
+.env
+apps/api/.env
+apps/web/.env
+
+# Build/temp
+*.zip
+*.db
+tmp/
+
+# Streamlit
+.streamlit/
