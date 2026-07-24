@@ -68,6 +68,7 @@ Acesse: [http://localhost:8501](http://localhost:8501)
 Ou use os scripts prontos:
 
 ```powershell
+.\generator-skills.ps1   # inicia backend e frontend em paralelo
 .\start_api.ps1   # inicia o backend
 .\start_web.ps1   # inicia o frontend
 ```
