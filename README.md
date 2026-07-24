@@ -68,10 +68,12 @@ Acesse: [http://localhost:8501](http://localhost:8501)
 Ou use os scripts prontos:
 
 ```powershell
-.\generator-skills.ps1   # inicia backend e frontend em paralelo
+.\generator-skills.ps1   # inicia backend + frontend no mesmo processo
 .\start_api.ps1   # inicia o backend
 .\start_web.ps1   # inicia o frontend
 ```
+
+Para encerrar o launcher unico, use `Ctrl+C` na mesma janela.
 
 ---
 

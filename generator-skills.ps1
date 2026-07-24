@@ -1,29 +1,12 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-$apiScript = Join-Path $PSScriptRoot "start_api.ps1"
-$webScript = Join-Path $PSScriptRoot "start_web.ps1"
+$launcher = Join-Path $PSScriptRoot "generator_skills.py"
+$python = if (Test-Path ".venv/Scripts/python.exe") { ".venv/Scripts/python.exe" } else { "python" }
 
-Write-Host "🚀 Iniciando Skill Forge backend e frontend..." -ForegroundColor Cyan
+if (-not (Test-Path $launcher)) {
+    throw "Arquivo nao encontrado: $launcher"
+}
 
-Start-Process powershell -WorkingDirectory $PSScriptRoot -ArgumentList @(
-    "-NoProfile",
-    "-NoExit",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-File",
-    $apiScript
-)
-
-Start-Process powershell -WorkingDirectory $PSScriptRoot -ArgumentList @(
-    "-NoProfile",
-    "-NoExit",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-File",
-    $webScript
-)
-
-Write-Host "✅ Backend e frontend foram iniciados em janelas separadas." -ForegroundColor Green
-Write-Host "   API:  http://localhost:8000" -ForegroundColor Green
-Write-Host "   Web:  http://localhost:8501" -ForegroundColor Green
+Write-Host "Iniciando launcher unico (API + Web)..." -ForegroundColor Cyan
+& $python $launcher
