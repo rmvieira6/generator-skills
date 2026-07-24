@@ -5,8 +5,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
-
+.kiro/
+.github/
 # Local envs
+*.db
 .env
 apps/api/.env
 apps/web/.env

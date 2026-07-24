@@ -4,56 +4,71 @@ description: {{OBJECTIVE}}
 version: 1.0.0
 ---
 
-# Contexto
-- Agente alvo: {{TARGET_AGENT}}
-- Dominio: {{DOMAIN}}
-- Nivel de autonomia: {{AUTONOMY_LEVEL}}
+## Skill Graph
 
-# Escopo
+```mermaid
+graph LR
+    OBJ[Objetivo] --> MAT[Materiais]
+    MAT --> REG[Regras]
+    REG --> EXEC[Execução]
+    REG --> ANTI[Anti-Duplicação]
+    REG --> SENIOR[Padrões Sênior]
+    EXEC --> OUT[Saída Esperada]
+```
+
+## Contexto
+- **Agente-alvo**: {{TARGET_AGENT}}
+- **Domínio**: {{DOMAIN}}
+- **Autonomia**: {{AUTONOMY_LEVEL}}
+- **Restrições**: {{CONSTRAINTS}}
+
+## Objetivo
 {{HIGH_LEVEL_DESCRIPTION}}
 
-# Restricoes
-{{CONSTRAINTS}}
-
-# Materiais
+## Materiais → [[Materiais]]
 {{MATERIALS_TABLE}}
 
-# Regras de Economia de Tokens
-1. Aplique progressive disclosure: mantenha o corpo principal minimo e referencie arquivos auxiliares quando houver detalhe extenso.
-2. Mantenha frontmatter enxuto e sem repeticoes no corpo.
-3. Elimine redundancias; referencie secoes existentes em vez de duplicar texto.
-4. Use linguagem imperativa, curta e telegráfica.
-5. Use tabelas para comparativos e checklists.
-6. Referencie caminhos de arquivos, nao copie conteudo inteiro.
-7. Limite exemplos a um exemplo minimo por regra.
-8. Use chunking por topicos com headers ancoraveis.
-9. Evite meta-comentario; execute a instrucao diretamente.
-10. Numere apenas o necessario; sem subniveis excessivos.
-11. Preserve placeholders explicitos para trechos dinamicos.
-12. Defina quando parar: nao expandir alem do escopo solicitado.
+## Regras de Economia de Tokens → [[Token Economy]]
+1. Progressive disclosure: corpo mínimo; detalhes em seções âncora.
+2. Wikilinks `[[Seção]]` para referenciar sem repetir conteúdo.
+3. Linguagem imperativa e telegráfica; sem meta-comentário.
+4. Tabelas para 3+ itens comparáveis; bullets apenas para sequências.
+5. Máximo 1 exemplo por regra, somente quando necessário.
+6. Referencie caminhos de arquivo; não copie conteúdo.
+7. Frontmatter enxuto: só `name`, `description`, `version`.
+8. Defina escopo de parada: não expanda além do objetivo.
+9. Constraints como negativos explícitos: "NÃO faça X".
+10. Elimine redundâncias; nunca duplique bloco já definido.
 
-# Protocolo Anti-Duplicacao e Continuidade (literal)
-1. Antes de implementar algo, ler o historico de implementacao (changelog, commits recentes, IMPLEMENTATION_LOG.md ou equivalente do projeto-alvo) para saber o que ja existe.
-2. Antes de criar uma funcao/modulo/endpoint, buscar no codigo-base se algo equivalente ja existe (grep semantico por nome/responsabilidade) - se existir, reutilizar ou estender, nunca duplicar.
-3. Fazer apenas a menor mudanca necessaria (principio do diff minimo): nao reescrever arquivos inteiros quando um ajuste pontual resolve.
-4. Avaliar qualidade olhando o todo, nao so o diff: antes de finalizar, revisar se a mudanca e consistente com os padroes ja estabelecidos no restante do projeto (nomenclatura, arquitetura, testes).
-5. Registrar a mudanca ao final em um log de implementacao (IMPLEMENTATION_LOG.md), com data, resumo e arquivos tocados - isso alimenta o passo 1 da proxima execucao, criando memoria incremental entre sessoes do agente.
-6. Nunca gerar codigo morto ou por via das duvidas: se algo nao foi pedido e nao e pre-requisito direto, nao implementar.
+## Protocolo Anti-Duplicação → [[Anti-Duplicação]]
+1. Leia `IMPLEMENTATION_LOG.md` antes de qualquer implementação.
+2. Busque equivalente no código-base (grep semântico por nome/responsabilidade).
+3. Se existir: reutilize ou estenda — **nunca duplique**.
+4. Diff mínimo: menor mudança que resolve; não reescreva arquivos inteiros.
+5. Avalie consistência com nomenclatura, arquitetura e testes do projeto.
+6. Registre ao final: data, resumo e arquivos tocados em `IMPLEMENTATION_LOG.md`.
+7. **Nunca gere código morto** ou implementações por precaução.
 
-# Padroes Senior Obrigatorios
-- Preservar separacao de camadas (dominio/aplicacao/infraestrutura) quando existente; propor migracao gradual quando ausente.
-- Exigir nomenclatura consistente e autoexplicativa.
-- Exigir testes automatizados para nova logica de negocio.
-- Exigir tratamento de erro explicito; proibir except pass ou catch silencioso.
-- Exigir documentacao minima viavel (README atualizado e docstrings publicas).
-- Exigir logs estruturados e evitar print solto em producao.
-- Exigir seguranca basica: nunca commitar segredos e sempre validar entradas externas.
+## Padrões Sênior → [[Padrões Sênior]]
+- Preservar separação de camadas (domínio / aplicação / infraestrutura).
+- Nomenclatura consistente e autoexplicativa.
+- Testes automatizados para nova lógica de negócio.
+- Tratamento de erro explícito; proibir `except: pass` ou catch silencioso.
+- Documentação mínima viável: README e docstrings públicas atualizados.
+- Logs estruturados em produção; sem `print` solto.
+- Segurança básica: nunca commitar segredos; validar toda entrada externa.
 
-# Modo Incremental
-Diff de materiais para atualizacao incremental:
+## Modo Incremental → [[Incremental]]
+Diff de materiais para atualização incremental:
 {{INCREMENTAL_DIFF}}
 
-# Formato de Saida Esperado
-- Produza artefato no formato nativo do agente alvo.
-- Produza instrucoes de uso curtas e acionaveis.
-- Pare quando o objetivo e os artefatos solicitados forem entregues.
+## Execução
+- Produza artefato no formato nativo do agente-alvo.
+- Inclua instruções de uso curtas e acionáveis.
+- **Pare** quando objetivo e artefatos solicitados forem entregues.
+- Nível de autonomia `{{AUTONOMY_LEVEL}}`: respeite escopo definido.
+
+## Saída Esperada
+- Um artefato por agente-alvo, no formato e caminho nativos.
+- `IMPLEMENTATION_LOG.md` atualizado após execução.
+- Prompt sugerido de ativação da skill (1–3 frases).

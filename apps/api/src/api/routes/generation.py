@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from src.api.schemas.generation import (
@@ -10,18 +12,19 @@ from src.api.schemas.generation import (
 from src.application.use_cases.generate_skill import GenerateSkillUseCase
 from src.application.use_cases.package_artifacts import package_as_zip
 from src.core.config import settings
-from src.core.sai_client import SaiLibraryClient
+from src.core.sai_client import SaiAuthError, SaiConfigurationError, SaiLibraryClient, SaiUpstreamError
 from src.domain.entities import Material, Project
 from src.infrastructure.persistence.artifact_store import artifact_store
 from src.infrastructure.persistence.generation_repository import SqlGenerationHistoryRepository
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.post("/generate", response_model=GenerateResponse)
 async def generate(request: GenerateRequest) -> GenerateResponse:
     if len(request.high_level_description) > settings.MAX_DESCRIPTION_LENGTH:
-        raise HTTPException(status_code=422, detail="High level description exceeds configured limit")
+        raise HTTPException(status_code=422, detail="Descrição excede o limite configurado.")
 
     project = Project(
         skill_name=request.skill_name,
@@ -41,7 +44,40 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
 
     items: list[GenerateItemResponse] = []
     for target_agent in request.target_agents:
-        result = await use_case.execute(project=project, materials=materials, target_agent=target_agent)
+        try:
+            result = await use_case.execute(project=project, materials=materials, target_agent=target_agent)
+        except SaiConfigurationError as exc:
+            logger.error("SAI not configured: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "A API de geração não está configurada. "
+                    "Copie .env.example para .env na raiz do projeto e preencha "
+                    "SAI_LIBRARY_API_KEY e SAI_LIBRARY_TEMPLATE_ID."
+                ),
+            ) from exc
+        except SaiAuthError as exc:
+            logger.error("SAI auth error: %s", exc)
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "Credenciais da SAI Library inválidas (401/403). "
+                    "Verifique SAI_LIBRARY_API_KEY e SAI_LIBRARY_TEMPLATE_ID no arquivo .env."
+                ),
+            ) from exc
+        except SaiUpstreamError as exc:
+            logger.error("SAI upstream error: %s", exc)
+            raise HTTPException(
+                status_code=502,
+                detail=f"Erro na SAI Library: {exc}",
+            ) from exc
+        except Exception as exc:
+            logger.exception("Unexpected error generating skill for agent %s", target_agent)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro inesperado ao gerar artefato: {exc}",
+            ) from exc
+
         zip_bytes = package_as_zip(
             files=result.files,
             project=project,

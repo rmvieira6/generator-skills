@@ -7,6 +7,7 @@ from src.infrastructure.agent_templates import (
     cursor_rules,
     fabric_pyspark_notebook,
     generic_openai,
+    kiro_skill,
     vertex_ai,
     windsurf,
 )
@@ -21,6 +22,7 @@ def render_for_agent(
 ) -> list[GeneratedFile]:
     renderers = {
         TargetAgent.CLAUDE: claude_skill.render,
+        TargetAgent.KIRO: kiro_skill.render,
         TargetAgent.COPILOT: copilot_instructions.render,
         TargetAgent.CURSOR: cursor_rules.render,
         TargetAgent.VERTEX_AI: vertex_ai.render,

@@ -9,11 +9,20 @@ from src.infrastructure.agent_templates.common import (
 
 
 def render(project: Project, materials: list[Material], generated_core: str) -> list[GeneratedFile]:
-    graph = skill_graph(["Objetivo", "Materiais", "Diretrizes", "Anti-Dup"])
+    """Gera steering file para o Kiro IDE (.kiro/steering/<name>.md)."""
+    graph = skill_graph(["Objetivo", "Materiais", "Regras", "Execução"])
     constraints_block = project.constraints.strip() if project.constraints.strip() else "_Sem restrições adicionais._"
+    # Normaliza o nome do arquivo: minúsculas, espaços → hífens
+    safe_name = project.skill_name.lower().replace(" ", "-")
 
     content = f"""\
-# {project.skill_name} — Windsurf Rules
+---
+inclusion: always
+---
+
+# {project.skill_name}
+
+> Steering file para o Kiro IDE. Incluído automaticamente em todas as sessões do workspace.
 
 ## Skill Graph
 {graph}
@@ -37,5 +46,9 @@ def render(project: Project, materials: list[Material], generated_core: str) -> 
 
 ## Diretrizes
 {generated_core}
+
+## Como ativar
+Esta skill é carregada automaticamente pelo Kiro IDE ao abrir o workspace.
+Para uso manual: mencione `#{safe_name}` no chat do Kiro.
 """
-    return [GeneratedFile(path=".windsurfrules", content=content)]
+    return [GeneratedFile(path=f".kiro/steering/{safe_name}.md", content=content)]

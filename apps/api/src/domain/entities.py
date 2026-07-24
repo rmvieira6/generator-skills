@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class TargetAgent(str, Enum):
     CLAUDE = "claude"
+    KIRO = "kiro"
     COPILOT = "copilot"
     CURSOR = "cursor"
     VERTEX_AI = "vertex_ai"

@@ -31,3 +31,16 @@ class SkillForgeApiClient:
         )
         response.raise_for_status()
         return response.json()
+
+    def deploy(self, download_token: str, target_agent: str, project_path: str) -> dict[str, Any]:
+        response = requests.post(
+            f"{self.base_url}/api/generation/deploy",
+            json={
+                "download_token": download_token,
+                "target_agent": target_agent,
+                "project_path": project_path,
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()
