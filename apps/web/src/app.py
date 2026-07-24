@@ -23,6 +23,57 @@ st.markdown(
 /* Fonte e fundo */
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
+:root {
+    --sf-bg: #f3f6fb;
+    --sf-surface: #ffffff;
+    --sf-text: #0f172a;
+    --sf-muted: #475569;
+    --sf-border: #dbe4ee;
+}
+
+/* Contraste global para evitar texto claro em fundo claro */
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(180deg, #f8fbff 0%, #edf3f9 100%);
+}
+[data-testid="stAppViewContainer"] .main,
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4,
+[data-testid="stAppViewContainer"] h5,
+[data-testid="stAppViewContainer"] h6 {
+    color: var(--sf-text);
+}
+
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p,
+[data-testid="stCaptionContainer"] span {
+    color: var(--sf-muted) !important;
+}
+
+/* Formulários com fundo branco e texto escuro */
+.stTextInput > div > div > input,
+.stTextArea textarea,
+div[data-baseweb="select"] > div {
+    background: var(--sf-surface) !important;
+    color: var(--sf-text) !important;
+    border-color: var(--sf-border) !important;
+}
+
+.stTextInput > div > div > input::placeholder,
+.stTextArea textarea::placeholder {
+    color: #64748b !important;
+}
+
+[data-testid="stExpander"] {
+    background: var(--sf-surface);
+    border: 1px solid var(--sf-border);
+    border-radius: 10px;
+}
+
 /* Header */
 .sf-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
@@ -32,7 +83,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     color: white;
 }
 .sf-header h1 { margin: 0; font-size: 2rem; letter-spacing: -0.5px; }
-.sf-header p  { margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.95rem; }
+.sf-header p  { margin: 0.25rem 0 0; color: #cbd5e1; font-size: 0.95rem; }
 
 /* Steps */
 .sf-steps {
@@ -47,7 +98,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     font-size: 0.82rem;
     font-weight: 600;
     border: 2px solid #e2e8f0;
-    color: #94a3b8;
+    color: #475569;
     background: white;
 }
 .sf-step.active {
@@ -65,6 +116,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .sf-agent-card {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
+    color: #0f172a;
     border-radius: 10px;
     padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
@@ -96,12 +148,25 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 /* Botão primário */
 .stButton > button[kind="primary"] {
     background: #1e3a5f !important;
+    color: #f8fafc !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
     padding: 0.5rem 1.5rem !important;
 }
 .stButton > button[kind="primary"]:hover {
     background: #2d5a8e !important;
+    color: #ffffff !important;
+}
+
+/* Botões padrão (ex.: Voltar) com texto claro */
+.stButton > button[kind="secondary"] {
+    background: #475569 !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    background: #334155 !important;
+    color: #ffffff !important;
 }
 
 /* Deploy success */
