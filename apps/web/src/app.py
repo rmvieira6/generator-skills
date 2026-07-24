@@ -82,7 +82,12 @@ div[data-baseweb="select"] > div {
     margin-bottom: 1.5rem;
     color: white;
 }
-.sf-header h1 { margin: 0; font-size: 2rem; letter-spacing: -0.5px; }
+.sf-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+    color: #f8fafc !important;
+}
 .sf-header p  { margin: 0.25rem 0 0; color: #cbd5e1; font-size: 0.95rem; }
 
 /* Steps */
@@ -167,6 +172,13 @@ div[data-baseweb="select"] > div {
 .stButton > button[kind="secondary"]:hover {
     background: #334155 !important;
     color: #ffffff !important;
+}
+
+/* Fallback para versões/temas do Streamlit que ignoram [kind] */
+.stButton > button,
+.stButton > button p,
+button[data-testid^="baseButton-"] {
+    color: #f8fafc !important;
 }
 
 /* Deploy success */
