@@ -73,6 +73,10 @@ Ou use os scripts prontos:
 .\start_web.ps1   # inicia o frontend
 ```
 
+Para o Streamlit Cloud, use o arquivo [`.laucher.py`](.laucher.py) como entrypoint da aplicação. Ele sobe a API em porta livre e executa o front-end no mesmo processo do Streamlit, sem abrir navegador local ou depender de `localhost` fixo.
+
+No Streamlit Cloud, cadastre suas chaves em `Settings > Secrets` do app. O launcher lê esses segredos e repassa para a API embutida, então você não precisa subir `.env` para a branch.
+
 Para encerrar o launcher unico, use `Ctrl+C` na mesma janela.
 
 ---
