@@ -1,0 +1,36 @@
+agents:
+  - id: claude
+    label: "Claude / Claude.ai (SKILL.md)"
+    files:
+      - SKILL.md
+  - id: kiro
+    label: "Kiro IDE (.kiro/steering)"
+    files:
+      - .kiro/steering/<nome-da-skill>.md
+  - id: copilot
+    label: "GitHub Copilot (.github/copilot-instructions.md)"
+    files:
+      - .github/copilot-instructions.md
+  - id: cursor
+    label: "Cursor (.cursor/rules/*.mdc)"
+    files:
+      - .cursor/rules/core.mdc
+      - .cursor/rules/anti-duplication.mdc
+  - id: vertex_ai
+    label: "Vertex AI Agent Builder (system_instruction.json)"
+    files:
+      - vertex/system_instruction.json
+  - id: windsurf
+    label: "Windsurf (.windsurfrules)"
+    files:
+      - .windsurfrules
+  - id: generic_openai
+    label: "Genérico OpenAI / Assistants API"
+    files:
+      - system_prompt.md
+      - tools.json
+  - id: fabric_pyspark_notebook
+    label: "Microsoft Fabric PySpark Notebook"
+    files:
+      - fabric/SKILL.md
+      - fabric/NOTEBOOK_USAGE.md
