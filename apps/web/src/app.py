@@ -74,6 +74,35 @@ div[data-baseweb="select"] > div {
     border-radius: 10px;
 }
 
+/* Contraste forte para cabeçalho e conteúdo dos expanders */
+[data-testid="stExpander"] details summary {
+    background: #e2e8f0;
+    border-radius: 8px;
+}
+[data-testid="stExpander"] details summary p,
+[data-testid="stExpander"] details summary span {
+    color: #0f172a !important;
+    font-weight: 600;
+}
+[data-testid="stExpander"] details[open] > div {
+    background: #ffffff;
+    color: #0f172a;
+}
+
+/* Botão de link (Baixar pacote) com contraste explícito */
+div.stLinkButton > a {
+    background: #1e3a5f !important;
+    color: #f8fafc !important;
+    border: 1px solid #1e3a5f !important;
+    border-radius: 8px !important;
+    font-weight: 600;
+}
+div.stLinkButton > a:hover {
+    background: #2d5a8e !important;
+    color: #ffffff !important;
+    border-color: #2d5a8e !important;
+}
+
 /* Header */
 .sf-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
