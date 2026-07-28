@@ -61,6 +61,7 @@ class OptimizeSkillRequest(BaseModel):
     skill_markdown: str = Field(min_length=50, max_length=80000)
     goals: list[SkillOptimizationGoal] = Field(min_length=1)
     target_agent: TargetAgent | None = None
+    objective_refinement_request: str = Field(default="", max_length=2000)
 
 
 class OptimizeSkillResponse(BaseModel):

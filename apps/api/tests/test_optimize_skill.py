@@ -64,3 +64,17 @@ def test_build_prompt_enables_execution_policy_only_when_execution_goal_selected
     assert "POLÍTICA CONDICIONAL — ROBUSTEZ/TEMPO TOTAL/QUALIDADE" in prompt
     assert "Regra de decisão final" in prompt
     assert "POLÍTICA CONDICIONAL — REDUÇÃO DE TOKENS" not in prompt
+
+
+def test_build_prompt_includes_objective_refinement_request_when_selected() -> None:
+    use_case = OptimizeSkillUseCase(sai_client=_DummySaiClient())
+
+    prompt = use_case._build_prompt(
+        skill_markdown="# Skill\nconteudo",
+        goals=[SkillOptimizationGoal.OBJECTIVE_REFINEMENT],
+        target_agent=TargetAgent.CLAUDE,
+        objective_refinement_request="Reforçar critérios de aceitação e limites de escopo.",
+    )
+
+    assert "Solicitação do usuário: Reforçar critérios de aceitação e limites de escopo." in prompt
+    assert "preserve a intenção funcional, os artefatos gerados, o escopo e o comportamento central da skill" in prompt

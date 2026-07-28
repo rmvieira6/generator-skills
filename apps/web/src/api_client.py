@@ -55,11 +55,13 @@ class SkillForgeApiClient:
         skill_markdown: str,
         goals: list[str],
         target_agent: str | None,
+        objective_refinement_request: str = "",
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "skill_markdown": skill_markdown,
             "goals": goals,
             "target_agent": target_agent,
+            "objective_refinement_request": objective_refinement_request,
         }
         response = requests.post(
             f"{self.base_url}/api/generation/optimize-skill",

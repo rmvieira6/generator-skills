@@ -122,6 +122,7 @@ async def optimize_skill(request: OptimizeSkillRequest) -> OptimizeSkillResponse
             skill_markdown=request.skill_markdown,
             goals=request.goals,
             target_agent=request.target_agent,
+            objective_refinement_request=request.objective_refinement_request,
         )
     except SaiConfigurationError as exc:
         logger.error("SAI not configured: %s", exc)

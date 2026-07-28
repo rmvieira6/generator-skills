@@ -431,6 +431,7 @@ def initialize_state() -> None:
         # Otimizacao de skill
         "opt_selected_goals": [],
         "opt_target_agent": "__auto__",
+        "opt_objective_refinement_request": "",
         "opt_result": None,
     }
     for key, value in defaults.items():
@@ -466,6 +467,7 @@ def clear_for_new_run() -> None:
         "step1_agents",
         "opt_selected_goals",
         "opt_target_agent",
+        "opt_objective_refinement_request",
         "opt_result",
     ]:
         st.session_state.pop(key, None)
@@ -623,6 +625,24 @@ if current_flow == "optimize":
     )
     st.session_state["opt_selected_goals"] = main_selected_goals
 
+    main_objective_refinement_request = ""
+    if "objective_refinement" in main_selected_goals:
+        main_objective_refinement_request = st.text_area(
+            "Como você quer refinar o objetivo dessa skill?",
+            value=str(st.session_state.get("opt_objective_refinement_request", "")),
+            key="opt_objective_refinement_request_main",
+            height=120,
+            placeholder=(
+                "Ex: deixar o objetivo mais orientado a decisão, reforçar limites de escopo, "
+                "melhorar critérios de aceitação, sem mudar os artefatos nem o comportamento central."
+            ),
+            help=(
+                "Descreva o refinamento desejado. O sistema vai complementar sua solicitação com melhores técnicas, "
+                "preservando os artefatos e o comportamento central da skill."
+            ),
+        )
+        st.session_state["opt_objective_refinement_request"] = main_objective_refinement_request
+
     agent_options = ["__auto__"] + [a["id"] for a in agents]
     selected_target = st.selectbox(
         "IDE/Agente da skill",
@@ -645,6 +665,11 @@ if current_flow == "optimize":
             st.error("Envie um arquivo SKILL.md para otimizar.")
         elif not main_selected_goals:
             st.error("Selecione pelo menos uma melhoria para otimização.")
+        elif (
+            "objective_refinement" in main_selected_goals
+            and not main_objective_refinement_request.strip()
+        ):
+            st.error("Descreva o refinamento desejado para o objetivo da skill.")
         else:
             try:
                 skill_markdown = uploaded_skill.getvalue().decode("utf-8")
@@ -661,6 +686,7 @@ if current_flow == "optimize":
                             skill_markdown=skill_markdown,
                             goals=main_selected_goals,
                             target_agent=target_agent,
+                            objective_refinement_request=main_objective_refinement_request.strip(),
                         )
                         st.session_state["opt_result_main"] = result
                         status.update(
@@ -1217,6 +1243,28 @@ with st.container(border=True):
                         )
                         st.session_state["opt_selected_goals"] = selected_goals
 
+                        objective_refinement_request = ""
+                        if "objective_refinement" in selected_goals:
+                            objective_refinement_request = st.text_area(
+                                "Como você quer refinar o objetivo dessa skill?",
+                                value=str(
+                                    st.session_state.get("opt_objective_refinement_request", "")
+                                ),
+                                key=f"step5_opt_objective_refinement_request_{idx}",
+                                height=120,
+                                placeholder=(
+                                    "Ex: deixar o objetivo mais orientado a decisão, reforçar limites de escopo, "
+                                    "melhorar critérios de aceitação, sem mudar os artefatos nem o comportamento central."
+                                ),
+                                help=(
+                                    "Descreva o refinamento desejado. O sistema vai complementar sua solicitação com melhores técnicas, "
+                                    "preservando os artefatos e o comportamento central da skill."
+                                ),
+                            )
+                            st.session_state["opt_objective_refinement_request"] = (
+                                objective_refinement_request
+                            )
+
                         agent_options = ["__auto__"] + [a["id"] for a in agents]
                         selected_target = st.selectbox(
                             "IDE/Agente da skill",
@@ -1245,6 +1293,11 @@ with st.container(border=True):
                                 st.error("Envie um arquivo SKILL.md para otimizar.")
                             elif not selected_goals:
                                 st.error("Selecione pelo menos uma melhoria para otimização.")
+                            elif (
+                                "objective_refinement" in selected_goals
+                                and not objective_refinement_request.strip()
+                            ):
+                                st.error("Descreva o refinamento desejado para o objetivo da skill.")
                             else:
                                 try:
                                     skill_markdown = uploaded_skill.getvalue().decode("utf-8")
@@ -1267,6 +1320,9 @@ with st.container(border=True):
                                                 skill_markdown=skill_markdown,
                                                 goals=selected_goals,
                                                 target_agent=target_agent,
+                                                objective_refinement_request=(
+                                                    objective_refinement_request.strip()
+                                                ),
                                             )
                                             st.session_state[result_key] = result
                                             status.update(

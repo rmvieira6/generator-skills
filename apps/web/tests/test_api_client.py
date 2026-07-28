@@ -21,3 +21,32 @@ def test_download_package(mock_get: Mock) -> None:
 
     assert payload == b"zip-bytes"
     mock_get.assert_called_once_with("http://localhost:8000/api/downloads/abc", timeout=60)
+
+
+@patch("src.api_client.requests.post")
+def test_optimize_skill_includes_objective_refinement_request(mock_post: Mock) -> None:
+    response = Mock()
+    response.json.return_value = {"optimized_markdown": "# refined"}
+    response.raise_for_status.return_value = None
+    mock_post.return_value = response
+
+    client = SkillForgeApiClient(base_url="http://localhost:8000")
+
+    payload = client.optimize_skill(
+        skill_markdown="# Skill\nconteudo",
+        goals=["objective_refinement"],
+        target_agent="claude",
+        objective_refinement_request="Tornar o objetivo mais mensurável.",
+    )
+
+    assert payload == {"optimized_markdown": "# refined"}
+    mock_post.assert_called_once_with(
+        "http://localhost:8000/api/generation/optimize-skill",
+        json={
+            "skill_markdown": "# Skill\nconteudo",
+            "goals": ["objective_refinement"],
+            "target_agent": "claude",
+            "objective_refinement_request": "Tornar o objetivo mais mensurável.",
+        },
+        timeout=180,
+    )

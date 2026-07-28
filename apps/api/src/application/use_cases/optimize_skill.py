@@ -16,6 +16,7 @@ class OptimizeSkillUseCase:
         skill_markdown: str,
         goals: list[SkillOptimizationGoal],
         target_agent: TargetAgent | None,
+        objective_refinement_request: str = "",
     ) -> tuple[str, TargetAgent | None, TargetAgent, list[str]]:
         detected = self.detect_target_agent(skill_markdown)
         effective_target = target_agent or detected or TargetAgent.CLAUDE
@@ -24,6 +25,7 @@ class OptimizeSkillUseCase:
             skill_markdown=skill_markdown,
             goals=goals,
             target_agent=effective_target,
+            objective_refinement_request=objective_refinement_request,
         )
         optimized_markdown = await self._sai_client.execute(prompt)
 
@@ -140,15 +142,45 @@ class OptimizeSkillUseCase:
 
         return "\n".join(blocks)
 
+    def _objective_refinement_request_block(
+        self,
+        goals: list[SkillOptimizationGoal],
+        objective_refinement_request: str,
+    ) -> str:
+        if SkillOptimizationGoal.OBJECTIVE_REFINEMENT not in goals:
+            return (
+                "Refinamento do objetivo não selecionado. Não aplicar técnicas específicas de refinamento orientado por solicitação do usuário.\n"
+            )
+
+        request_text = objective_refinement_request.strip()
+        if not request_text:
+            return (
+                "Refinamento do objetivo selecionado, mas sem solicitação específica do usuário. "
+                "Faça apenas refinamento mínimo para clareza e precisão, preservando artefatos e comportamento central.\n"
+            )
+
+        return (
+            "Refinamento do objetivo selecionado com solicitação específica do usuário.\n"
+            f"Solicitação do usuário: {request_text}\n"
+            "Aplique as melhores técnicas de refinamento sobre essa solicitação, mas preserve a intenção funcional, "
+            "os artefatos gerados, o escopo e o comportamento central da skill.\n"
+            "Não transforme o pedido em reescrita estética nem altere responsabilidades centrais.\n"
+        )
+
     def _build_prompt(
         self,
         skill_markdown: str,
         goals: list[SkillOptimizationGoal],
         target_agent: TargetAgent,
+        objective_refinement_request: str = "",
     ) -> str:
         goals_block = self._goal_instructions(goals)
 
         conditional_policies = self._conditional_policy_instructions(goals)
+        objective_refinement_block = self._objective_refinement_request_block(
+            goals=goals,
+            objective_refinement_request=objective_refinement_request,
+        )
         return (
             "Você é um especialista em engenharia de prompts e skills enterprise.\n"
             "Objetivo: otimizar a SKILL.md enviada pelo usuário sem perder intenção funcional.\n\n"
@@ -159,13 +191,13 @@ class OptimizeSkillUseCase:
             "4) Se um goal condicional não foi selecionado, não aplique a política correspondente.\n"
             "5) Evite prolixidade e redundância sem perder regras críticas de decisão.\n"
             "6) Entregue APENAS o markdown final otimizado, sem comentários extras.\n\n"
-            "4) Evite prolixidade e redundância sem perder regras críticas de decisão.\n"
-            "5) Entregue APENAS o markdown final otimizado, sem comentários extras.\n\n"
             f"Agente/IDE alvo: {target_agent.value}\n"
+            "Melhorias selecionadas pelo usuário:\n"
+            f"{goals_block}\n\n"
             "Políticas condicionais ativas para esta execução:\n"
             f"{conditional_policies}\n"
-            "clareza determinística -> eliminação de duplicidade -> redução de tokens -> otimização adicional de latência.\n"
-            "A redução de tokens nunca pode remover regra necessária para geração correta ou para bloquear execução inválida.\n\n"
+            "Contexto adicional para refinamento do objetivo:\n"
+            f"{objective_refinement_block}\n"
             "SKILL original do usuário:\n"
             "```markdown\n"
             f"{skill_markdown}\n"
