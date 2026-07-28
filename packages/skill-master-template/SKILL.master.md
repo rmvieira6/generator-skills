@@ -25,6 +25,33 @@ graph LR
 ## Objetivo
 {{HIGH_LEVEL_DESCRIPTION}}
 
+## Formato Obrigatório do Núcleo Gerado → [[Qualidade]]
+O núcleo gerado deve vir **pronto**, com as seções abaixo já preenchidas em português técnico claro:
+
+1. `## Resumo Executivo`
+: 4-8 linhas com objetivo, escopo e resultado esperado.
+
+2. `## Instruções Determinísticas`
+: passos numerados no formato **ação + condição + saída esperada**.
+
+3. `## Encadeamento de Passos`
+: para cada passo, informar pré-condição e pós-condição.
+
+4. `## Instruções Negativas (NÃO Fazer)`
+: lista direta e curta com restrições explícitas.
+
+5. `## Reaproveitamento e Anti-Duplicação`
+: o que reutilizar e o que evitar duplicar no contexto do projeto.
+
+6. `## Testes Práticos de Aceitação`
+: casos de teste objetivos (entrada, execução, resultado esperado).
+
+7. `## Checklist Final`
+: checklist verificável de conclusão.
+
+8. `## Padrões de Correspondência`
+: mapear `entrada -> processamento -> saída` para o fluxo principal.
+
 ## Materiais → [[Materiais]]
 {{MATERIALS_TABLE}}
 

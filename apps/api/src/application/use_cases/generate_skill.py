@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from src.application.ports.repositories import GenerationHistoryRepositoryPort
 from src.application.use_cases.validate_materials import sanitize_metadata, validate_materials
@@ -10,6 +11,8 @@ from src.infrastructure.agent_templates import registry
 
 
 class GenerateSkillUseCase:
+    QUALITY_PROFILE_VERSION = "quality-v3-2026-07"
+
     def __init__(
         self,
         history_repo: GenerationHistoryRepositoryPort,
@@ -20,8 +23,9 @@ class GenerateSkillUseCase:
 
     async def execute(self, project: Project, materials: list[Material], target_agent: TargetAgent) -> GenerationResult:
         materials = validate_materials(materials)
+        refined_project = self._refine_project_inputs(project)
 
-        project_payload = project.model_dump(mode="json")
+        project_payload = refined_project.model_dump(mode="json")
         materials_payload = [
             {
                 **item.model_dump(mode="json"),
@@ -33,6 +37,7 @@ class GenerateSkillUseCase:
         request_hash = stable_hash(
             {
                 "agent": target_agent.value,
+                "quality_profile": self.QUALITY_PROFILE_VERSION,
                 "project": project_payload,
                 "materials": materials_payload,
             }
@@ -59,11 +64,11 @@ class GenerateSkillUseCase:
             new_payload = {"materials": materials_payload}
             incremental_hint = material_diff(old_payload, new_payload)
 
-        prompt = self._build_prompt(project, materials_payload, target_agent, incremental_hint)
+        prompt = self._build_prompt(refined_project, materials_payload, target_agent, incremental_hint)
 
         generated_core = await self._sai_client.execute(prompt)
-        files = registry.render_for_agent(target_agent, project, materials, generated_core)
-        suggested_prompt = registry.suggested_prompt(project)
+        files = registry.render_for_agent(target_agent, refined_project, materials, generated_core)
+        suggested_prompt = registry.suggested_prompt(refined_project)
 
         preview_markdown = next((item.content for item in files if item.path.endswith("SKILL.md")), files[0].content)
 
@@ -132,3 +137,31 @@ class GenerateSkillUseCase:
                 return candidate.read_text(encoding="utf-8")
 
         raise FileNotFoundError(f"SKILL master template not found at: {settings.SKILL_MASTER_TEMPLATE_PATH}")
+
+    def _normalize_text(self, text: str) -> str:
+        cleaned = re.sub(r"\s+", " ", text or "").strip()
+        if not cleaned:
+            return ""
+        return cleaned[0].upper() + cleaned[1:]
+
+    def _refine_project_inputs(self, project: Project) -> Project:
+        objective = self._normalize_text(project.objective)
+        description = self._normalize_text(project.high_level_description)
+        constraints = self._normalize_text(project.constraints)
+
+        refined_objective = (
+            f"{objective} "
+            "Entregar solução robusta, testável e de fácil manutenção, com linguagem técnica clara e objetiva."
+        )
+
+        refined_description = description
+
+        refined_constraints = constraints or "Sem restrições adicionais."
+
+        return project.model_copy(
+            update={
+                "objective": refined_objective,
+                "high_level_description": refined_description,
+                "constraints": refined_constraints,
+            }
+        )
