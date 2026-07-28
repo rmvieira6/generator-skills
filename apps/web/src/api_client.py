@@ -20,6 +20,11 @@ class SkillForgeApiClient:
         response.raise_for_status()
         return response.json()
 
+    def download_package(self, token: str) -> bytes:
+        response = requests.get(f"{self.base_url}/api/downloads/{token}", timeout=60)
+        response.raise_for_status()
+        return response.content
+
     def download_url(self, token: str) -> str:
         return f"{self.base_url}/api/downloads/{token}"
 

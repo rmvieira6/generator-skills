@@ -690,8 +690,15 @@ with st.container(border=True):
 
                     col_dl, col_prev, col_prompt = st.columns(3)
                     with col_dl:
-                        dl_url = client.download_url(item["download_token"])
-                        st.link_button("⬇️ Baixar pacote (.zip)", dl_url, use_container_width=True)
+                        zip_bytes = client.download_package(item["download_token"])
+                        st.download_button(
+                            "⬇️ Baixar pacote (.zip)",
+                            data=zip_bytes,
+                            file_name="skill-forge-artifacts.zip",
+                            mime="application/zip",
+                            key=f"download_{idx}",
+                            use_container_width=True,
+                        )
                     with col_prev:
                         with st.expander("👁️ Preview SKILL.md"):
                             st.code(item.get("preview_markdown", ""), language="markdown")
