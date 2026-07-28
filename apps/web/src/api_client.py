@@ -49,3 +49,22 @@ class SkillForgeApiClient:
         )
         response.raise_for_status()
         return response.json()
+
+    def optimize_skill(
+        self,
+        skill_markdown: str,
+        goals: list[str],
+        target_agent: str | None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "skill_markdown": skill_markdown,
+            "goals": goals,
+            "target_agent": target_agent,
+        }
+        response = requests.post(
+            f"{self.base_url}/api/generation/optimize-skill",
+            json=payload,
+            timeout=180,
+        )
+        response.raise_for_status()
+        return response.json()

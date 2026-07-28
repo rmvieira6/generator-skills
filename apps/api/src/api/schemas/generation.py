@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 from src.domain.entities import ConnectorType, TargetAgent
@@ -42,3 +44,28 @@ class ConnectionTestRequest(BaseModel):
 class ConnectionTestResponse(BaseModel):
     ok: bool
     detail: str
+
+
+class SkillOptimizationGoal(str, Enum):
+    TOKEN_REDUCTION = "token_reduction"
+    EXECUTION_DEPTH = "execution_depth"
+    QUALITY_IMPROVEMENT = "quality_improvement"
+    OBJECTIVE_REFINEMENT = "objective_refinement"
+    DETERMINISTIC_INSTRUCTIONS = "deterministic_instructions"
+    PRACTICAL_TESTS_CHECKLIST = "practical_tests_checklist"
+    DIRECT_NEGATIVE_INSTRUCTIONS = "direct_negative_instructions"
+    REUSE_AND_ANTI_DUPLICATION = "reuse_and_anti_duplication"
+
+
+class OptimizeSkillRequest(BaseModel):
+    skill_markdown: str = Field(min_length=50, max_length=80000)
+    goals: list[SkillOptimizationGoal] = Field(min_length=1)
+    target_agent: TargetAgent | None = None
+
+
+class OptimizeSkillResponse(BaseModel):
+    optimized_markdown: str
+    detected_target_agent: TargetAgent | None = None
+    effective_target_agent: TargetAgent
+    applied_goals: list[SkillOptimizationGoal]
+    quality_notes: list[str]

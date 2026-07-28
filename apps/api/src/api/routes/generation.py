@@ -8,8 +8,11 @@ from src.api.schemas.generation import (
     GenerateItemResponse,
     GenerateRequest,
     GenerateResponse,
+    OptimizeSkillRequest,
+    OptimizeSkillResponse,
 )
 from src.application.use_cases.generate_skill import GenerateSkillUseCase
+from src.application.use_cases.optimize_skill import OptimizeSkillUseCase
 from src.application.use_cases.package_artifacts import package_as_zip
 from src.core.config import settings
 from src.core.sai_client import SaiAuthError, SaiConfigurationError, SaiLibraryClient, SaiUpstreamError
@@ -108,3 +111,48 @@ def test_connection(request: ConnectionTestRequest) -> ConnectionTestResponse:
             return ConnectionTestResponse(ok=False, detail="Missing base_url or endpoint")
 
     return ConnectionTestResponse(ok=True, detail="Connection parameters look valid")
+
+
+@router.post("/optimize-skill", response_model=OptimizeSkillResponse)
+async def optimize_skill(request: OptimizeSkillRequest) -> OptimizeSkillResponse:
+    use_case = OptimizeSkillUseCase(sai_client=SaiLibraryClient())
+
+    try:
+        optimized_markdown, detected_target, effective_target, quality_notes = await use_case.execute(
+            skill_markdown=request.skill_markdown,
+            goals=request.goals,
+            target_agent=request.target_agent,
+        )
+    except SaiConfigurationError as exc:
+        logger.error("SAI not configured: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "A API de otimização não está configurada. "
+                "Copie .env.example para .env na raiz do projeto e preencha "
+                "SAI_LIBRARY_API_KEY e SAI_LIBRARY_TEMPLATE_ID."
+            ),
+        ) from exc
+    except SaiAuthError as exc:
+        logger.error("SAI auth error: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Credenciais da SAI Library inválidas (401/403). "
+                "Verifique SAI_LIBRARY_API_KEY e SAI_LIBRARY_TEMPLATE_ID no arquivo .env."
+            ),
+        ) from exc
+    except SaiUpstreamError as exc:
+        logger.error("SAI upstream error: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Erro na SAI Library: {exc}") from exc
+    except Exception as exc:
+        logger.exception("Unexpected error optimizing skill")
+        raise HTTPException(status_code=500, detail=f"Erro inesperado ao otimizar skill: {exc}") from exc
+
+    return OptimizeSkillResponse(
+        optimized_markdown=optimized_markdown,
+        detected_target_agent=detected_target,
+        effective_target_agent=effective_target,
+        applied_goals=request.goals,
+        quality_notes=quality_notes,
+    )

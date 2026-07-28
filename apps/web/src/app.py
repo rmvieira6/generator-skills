@@ -1,8 +1,22 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
 import streamlit as st
 
 from api_client import SkillForgeApiClient
+
+
+class AgentCatalogItem(TypedDict):
+    id: str
+    label: str
+    files: list[str]
+
+
+class ConnectorCatalogItem(TypedDict):
+    id: str
+    label: str
+    fields: list[str]
 
 # ---------------------------------------------------------------------------
 # Configuração da página
@@ -301,6 +315,19 @@ STEP_LABELS = [
     "5 · Instalar",
 ]
 
+OPTIMIZATION_GOALS: list[tuple[str, str]] = [
+    ("token_reduction", "Redução do consumo de token"),
+    ("execution_depth", "Aumentar robustez/tempo de execução total"),
+    ("quality_improvement", "Melhorar qualidade geral das gerações"),
+    ("objective_refinement", "Refinamento do objetivo"),
+    ("deterministic_instructions", "Instruções determinísticas"),
+    ("practical_tests_checklist", "Testes práticos + checklist"),
+    ("direct_negative_instructions", "Instruções negativas diretas"),
+    ("reuse_and_anti_duplication", "Reaproveitamento e anti-duplicação"),
+]
+
+OPTIMIZATION_GOAL_LABELS: dict[str, str] = {key: label for key, label in OPTIMIZATION_GOALS}
+
 AGENT_ICONS: dict[str, str] = {
     "claude": "✳️",
     "kiro": "🧭",
@@ -314,8 +341,7 @@ AGENT_ICONS: dict[str, str] = {
 
 FIELD_HELP: dict[str, str] = {
     "agents": (
-        "Escolha para quais agentes o artefato será gerado. "
-        "Você pode selecionar mais de um."
+        "Escolha para quais agentes o artefato será gerado. Você pode selecionar mais de um."
     ),
     "skill_name": "Nome interno da skill. Ex: Revisor Backend Node.",
     "objective": "1 frase com o resultado esperado. Ex: Revisar PRs com foco em segurança.",
@@ -381,11 +407,13 @@ METADATA_HELP: dict[str, str] = {
     "branch": "Branch principal para leitura de contexto.",
 }
 
+
 # ---------------------------------------------------------------------------
 # Estado da sessão
 # ---------------------------------------------------------------------------
 def initialize_state() -> None:
     defaults: dict[str, object] = {
+        "entry_flow": "home",
         "step": 1,
         "materials": [],
         "result": [],
@@ -400,6 +428,10 @@ def initialize_state() -> None:
         # Deploy
         "deploy_item_idx": None,
         "deploy_done": {},
+        # Otimizacao de skill
+        "opt_selected_goals": [],
+        "opt_target_agent": "__auto__",
+        "opt_result": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -411,11 +443,30 @@ def go_to(step: int) -> None:
     st.rerun()
 
 
+def go_to_flow(flow: str) -> None:
+    st.session_state.entry_flow = flow
+    st.rerun()
+
+
 def clear_for_new_run() -> None:
     for key in [
-        "step", "result", "materials", "selected_agents", "skill_name",
-        "objective", "domain", "autonomy_level", "constraints", "description",
-        "deploy_item_idx", "deploy_done", "step1_agents",
+        "entry_flow",
+        "step",
+        "result",
+        "materials",
+        "selected_agents",
+        "skill_name",
+        "objective",
+        "domain",
+        "autonomy_level",
+        "constraints",
+        "description",
+        "deploy_item_idx",
+        "deploy_done",
+        "step1_agents",
+        "opt_selected_goals",
+        "opt_target_agent",
+        "opt_result",
     ]:
         st.session_state.pop(key, None)
     st.rerun()
@@ -434,7 +485,7 @@ def select_agent(agent_id: str) -> None:
 
 
 def render_info_label(label: str, help_text: str) -> None:
-    tooltip = help_text.replace('"', '&quot;')
+    tooltip = help_text.replace('"', "&quot;")
     st.markdown(
         (
             f"<div class='sf-field-label'>{label} "
@@ -465,8 +516,32 @@ except Exception:
     st.error("❌ Não foi possível conectar à API. Verifique se o backend está rodando.")
     st.stop()
 
-agents = catalog.get("agents", [])
-connectors = catalog.get("connectors", [])
+raw_agents = catalog.get("agents", [])
+raw_connectors = catalog.get("connectors", [])
+
+agents: list[AgentCatalogItem] = []
+if isinstance(raw_agents, list):
+    for item in raw_agents:
+        if not isinstance(item, dict):
+            continue
+        raw_files = item.get("files", [])
+        files: list[str] = [str(value) for value in raw_files] if isinstance(raw_files, list) else []
+        agent_id = str(item.get("id", "")).strip()
+        label = str(item.get("label", "")).strip()
+        if agent_id and label:
+            agents.append({"id": agent_id, "label": label, "files": files})
+
+connectors: list[ConnectorCatalogItem] = []
+if isinstance(raw_connectors, list):
+    for item in raw_connectors:
+        if not isinstance(item, dict):
+            continue
+        raw_fields = item.get("fields", [])
+        fields: list[str] = [str(value) for value in raw_fields] if isinstance(raw_fields, list) else []
+        connector_id = str(item.get("id", "")).strip()
+        label = str(item.get("label", "")).strip()
+        if connector_id and label:
+            connectors.append({"id": connector_id, "label": label, "fields": fields})
 
 # ---------------------------------------------------------------------------
 # Header
@@ -480,6 +555,156 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+current_flow = str(st.session_state.get("entry_flow", "home"))
+
+if current_flow == "home":
+    st.subheader("Escolha o fluxo")
+    st.caption("Selecione o que você quer fazer agora.")
+
+    col_forge, col_opt = st.columns(2)
+    with col_forge:
+        st.button(
+            "⚡ Forjar uma nova Skill\n\nEntrar no wizard completo para criar artefatos do zero.",
+            key="home_forge",
+            type="tertiary",
+            use_container_width=True,
+            on_click=go_to_flow,
+            args=("forge",),
+        )
+    with col_opt:
+        st.button(
+            "🧪 Otimização de Skills\n\nEnviar uma SKILL.md existente e gerar uma versão otimizada.",
+            key="home_opt",
+            type="tertiary",
+            use_container_width=True,
+            on_click=go_to_flow,
+            args=("optimize",),
+        )
+
+    st.stop()
+
+if current_flow == "optimize":
+    back_col, _ = st.columns([1, 5])
+    with back_col:
+        st.button("← Início", key="opt_back_home", on_click=go_to_flow, args=("home",))
+
+    st.subheader("Otimização de Skills")
+    st.caption(
+        "Envie uma SKILL.md para gerar uma versão otimizada com foco em qualidade enterprise, "
+        "determinismo e eficiência de tokens."
+    )
+
+    uploaded_skill = st.file_uploader(
+        "Upload da sua SKILL.md",
+        type=["md"],
+        key="opt_file_main",
+        help="Suba sua skill atual para receber uma versão refinada e otimizada.",
+    )
+
+    main_goal_options: list[str] = [key for key, _ in OPTIMIZATION_GOALS]
+    default_goals_raw = st.session_state.get("opt_selected_goals", [])
+    main_default_goals: list[str] = [
+        value
+        for value in default_goals_raw
+        if isinstance(value, str) and value in main_goal_options
+    ]
+
+    def _goal_label(value: str) -> str:
+        return OPTIMIZATION_GOAL_LABELS.get(value, value)
+
+    main_selected_goals: list[str] = st.multiselect(
+        "Tipo de melhoria desejada",
+        options=main_goal_options,
+        default=main_default_goals,
+        format_func=_goal_label,
+        key="opt_goals_main",
+        placeholder="Selecione uma ou mais melhorias.",
+    )
+    st.session_state["opt_selected_goals"] = main_selected_goals
+
+    agent_options = ["__auto__"] + [a["id"] for a in agents]
+    selected_target = st.selectbox(
+        "IDE/Agente da skill",
+        options=agent_options,
+        index=agent_options.index(st.session_state.opt_target_agent)
+        if st.session_state.opt_target_agent in agent_options
+        else 0,
+        format_func=lambda value: (
+            "Detectar automaticamente"
+            if value == "__auto__"
+            else next((a["label"] for a in agents if a["id"] == value), value)
+        ),
+        key="opt_target_agent_main",
+        help="Selecione manualmente se a detecção automática não identificar corretamente.",
+    )
+    st.session_state.opt_target_agent = selected_target
+
+    if st.button("⚙️ Gerar SKILL.md otimizada", key="opt_generate_main", type="primary"):
+        if uploaded_skill is None:
+            st.error("Envie um arquivo SKILL.md para otimizar.")
+        elif not main_selected_goals:
+            st.error("Selecione pelo menos uma melhoria para otimização.")
+        else:
+            try:
+                skill_markdown = uploaded_skill.getvalue().decode("utf-8")
+            except UnicodeDecodeError:
+                st.error("O arquivo deve estar em UTF-8.")
+            else:
+                with st.status("🧠 Otimizando skill...", expanded=True) as status:
+                    status.write(
+                        "Aplicando técnicas de refinamento e boas práticas enterprise..."
+                    )
+                    try:
+                        target_agent = None if selected_target == "__auto__" else selected_target
+                        result = client.optimize_skill(
+                            skill_markdown=skill_markdown,
+                            goals=main_selected_goals,
+                            target_agent=target_agent,
+                        )
+                        st.session_state["opt_result_main"] = result
+                        status.update(
+                            label="✅ SKILL otimizada com sucesso!",
+                            state="complete",
+                        )
+                    except Exception as exc:
+                        status.update(label="❌ Erro na otimização", state="error")
+                        st.error(f"Erro ao otimizar skill: {exc}")
+
+    opt_result_main = st.session_state.get("opt_result_main")
+    if isinstance(opt_result_main, dict):
+        detected = opt_result_main.get("detected_target_agent")
+        effective = opt_result_main.get("effective_target_agent")
+
+        if detected:
+            st.caption(f"Detecção automática: `{detected}`")
+        st.caption(f"Agente efetivo usado na otimização: `{effective}`")
+
+        applied = opt_result_main.get("applied_goals", [])
+        if applied:
+            labels = [OPTIMIZATION_GOAL_LABELS.get(item, item) for item in applied]
+            st.markdown("**Melhorias aplicadas:** " + ", ".join(labels))
+
+        notes = opt_result_main.get("quality_notes", [])
+        if notes:
+            st.markdown("**Resumo das melhorias técnicas:**")
+            for note in notes:
+                st.markdown(f"- {note}")
+
+        optimized_markdown = opt_result_main.get("optimized_markdown", "")
+        st.download_button(
+            "⬇️ Baixar SKILL.md otimizada",
+            data=optimized_markdown.encode("utf-8"),
+            file_name="SKILL.optimized.md",
+            mime="text/markdown",
+            key="opt_download_main",
+            use_container_width=True,
+        )
+
+        with st.expander("👁️ Preview da SKILL.md otimizada"):
+            st.code(optimized_markdown, language="markdown")
+
+    st.stop()
 
 # ---------------------------------------------------------------------------
 # Barra de progresso (steps)
@@ -511,8 +736,7 @@ with st.container(border=True):
     if st.session_state.step == 1:
         st.subheader("Passo 1 — Selecionar agente-alvo")
         st.caption(
-            "Escolha para qual IDE ou ambiente a skill será gerada. "
-            "Pode selecionar mais de um."
+            "Escolha para qual IDE ou ambiente a skill será gerada. Pode selecionar mais de um."
         )
         st.info(
             "Aqui aparecem as IDEs e os agentes disponíveis para geração. "
@@ -523,7 +747,7 @@ with st.container(border=True):
         agent_cols = st.columns(2)
         for idx, agent in enumerate(agents):
             with agent_cols[idx % 2]:
-                files_str = ", ".join(agent.get("files", [])) or "nao informado"
+                files_str = ", ".join(agent["files"]) or "nao informado"
                 is_selected = agent["id"] in st.session_state.selected_agents
                 agent_icon = AGENT_ICONS.get(agent["id"], "🛠️")
                 st.button(
@@ -559,12 +783,14 @@ with st.container(border=True):
                 use_container_width=True,
             )
 
-# ---------------------------------------------------------------------------
-# PASSO 2 — Descrever artefato
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # PASSO 2 — Descrever artefato
+    # ---------------------------------------------------------------------------
     elif st.session_state.step == 2:
         st.subheader("Passo 2 — Descrever o artefato")
-        st.caption("Preencha as informações da instrução que será gerada para o agente trabalhar do jeito que você precisa.")
+        st.caption(
+            "Preencha as informações da instrução que será gerada para o agente trabalhar do jeito que você precisa."
+        )
         st.info(
             "Artefato é o arquivo final que o sistema gera para você usar no agente escolhido, "
             "como um SKILL.md, instruções do Copilot ou regras do Cursor. "
@@ -606,7 +832,8 @@ with st.container(border=True):
                 index=["suggest_only", "apply_changes", "run_commands"].index(
                     st.session_state.autonomy_level
                 )
-                if st.session_state.autonomy_level in ["suggest_only", "apply_changes", "run_commands"]
+                if st.session_state.autonomy_level
+                in ["suggest_only", "apply_changes", "run_commands"]
                 else 0,
                 key="step2_autonomy",
                 label_visibility="collapsed",
@@ -655,9 +882,9 @@ with st.container(border=True):
         if not is_valid:
             st.caption("⚠️ Preencha os campos obrigatórios (*) para continuar.")
 
-# ---------------------------------------------------------------------------
-# PASSO 3 — Materiais
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # PASSO 3 — Materiais
+    # ---------------------------------------------------------------------------
     elif st.session_state.step == 3:
         st.subheader("Passo 3 — Adicionar materiais de contexto")
         st.caption(
@@ -669,7 +896,7 @@ with st.container(border=True):
             "cadastre aqui. Se não tiver, você pode continuar sem adicionar materiais."
         )
 
-        connector_ids = [c["id"] for c in connectors]
+        connector_ids: list[str] = [c["id"] for c in connectors]
         connector_options = ", ".join(c["label"] for c in connectors)
         render_info_label(
             "Tipo de conector",
@@ -678,7 +905,7 @@ with st.container(border=True):
                 f"Opcoes disponiveis: {connector_options}",
             ),
         )
-        selected_connector = st.selectbox(
+        selected_connector: str = st.selectbox(
             "Tipo de conector",
             options=connector_ids,
             format_func=lambda v: next((c["label"] for c in connectors if c["id"] == v), v),
@@ -687,26 +914,26 @@ with st.container(border=True):
         )
         col_a, col_b = st.columns(2)
         with col_a:
-            material_name_placeholder = "Ex: Manual da API de Pedidos ou Documentação do sistema financeiro"
+            material_name_placeholder = (
+                "Ex: Manual da API de Pedidos ou Documentação do sistema financeiro"
+            )
             render_info_label(
                 "Nome do material",
                 build_tooltip(FIELD_HELP["material_name"], material_name_placeholder),
             )
-            name = st.text_input(
+            name: str = st.text_input(
                 "Nome do material",
                 key="step3_name",
                 placeholder=material_name_placeholder,
                 label_visibility="collapsed",
             )
         with col_b:
-            material_description_placeholder = (
-                "Ex: Esse material explica as regras do sistema e ajuda o agente a responder com mais precisão"
-            )
+            material_description_placeholder = "Ex: Esse material explica as regras do sistema e ajuda o agente a responder com mais precisão"
             render_info_label(
                 "Por que este material importa? *",
                 build_tooltip(FIELD_HELP["material_description"], material_description_placeholder),
             )
-            description = st.text_area(
+            description: str = st.text_area(
                 "Por que este material importa? *",
                 key="step3_description",
                 placeholder=material_description_placeholder,
@@ -714,14 +941,23 @@ with st.container(border=True):
                 label_visibility="collapsed",
             )
 
-        fields = next((c["fields"] for c in connectors if c["id"] == selected_connector), [])
-        if fields:
+        connector_fields_raw: object = next(
+            (c["fields"] for c in connectors if c["id"] == selected_connector), []
+        )
+        connector_fields: list[str] = (
+            [str(field) for field in connector_fields_raw]
+            if isinstance(connector_fields_raw, list)
+            else []
+        )
+        if connector_fields:
             st.markdown("**Configuração do conector:**")
-            meta_cols = st.columns(min(len(fields), 3))
+            meta_cols = st.columns(min(len(connector_fields), 3))
             metadata: dict[str, str] = {}
-            for i, field in enumerate(fields):
+            for i, field in enumerate(connector_fields):
                 with meta_cols[i % 3]:
-                    field_placeholder = METADATA_PLACEHOLDERS.get(field, "Preencha com a informacao correspondente.")
+                    field_placeholder = METADATA_PLACEHOLDERS.get(
+                        field, "Preencha com a informacao correspondente."
+                    )
                     render_info_label(
                         humanize_field_name(field),
                         build_tooltip(
@@ -788,9 +1024,9 @@ with st.container(border=True):
             ):
                 go_to(4)
 
-# ---------------------------------------------------------------------------
-# PASSO 4 — Revisar e gerar
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # PASSO 4 — Revisar e gerar
+    # ---------------------------------------------------------------------------
     elif st.session_state.step == 4:
         st.subheader("Passo 4 — Revisar e gerar")
         st.caption("Confira as informações antes de gerar os artefatos.")
@@ -821,7 +1057,9 @@ with st.container(border=True):
             if st.button("← Voltar", key="step4_back"):
                 go_to(3)
         with right:
-            if st.button("⚡ Gerar artefatos", type="primary", key="step4_generate", use_container_width=True):
+            if st.button(
+                "⚡ Gerar artefatos", type="primary", key="step4_generate", use_container_width=True
+            ):
                 payload = {
                     "skill_name": st.session_state.skill_name,
                     "objective": st.session_state.objective,
@@ -844,9 +1082,9 @@ with st.container(border=True):
                         st.error(f"Erro: {exc}")
                 st.rerun()
 
-# ---------------------------------------------------------------------------
-# PASSO 5 — Resultados + wizard de instalação automatizada
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # PASSO 5 — Resultados + wizard de instalação automatizada
+    # ---------------------------------------------------------------------------
     elif st.session_state.step == 5:
         st.subheader("Passo 5 — Artefatos gerados")
 
@@ -890,59 +1128,191 @@ with st.container(border=True):
                     with st.expander("💬 Prompt sugerido"):
                         st.code(item.get("suggested_prompt", ""), language="markdown")
 
-                    # -------------------------------------------------------
-                    # Sub-wizard de instalação automatizada
-                    # -------------------------------------------------------
-                    st.markdown("#### 🚀 Instalar automaticamente")
-                    st.caption(
-                        "Informe o diretório raiz do seu projeto e o Skill Forge "
-                        "copiará os artefatos para os locais corretos."
-                    )
+                    tab_deploy, tab_opt = st.tabs(["🚀 Deploy", "🧪 Otimização de Skills"])
 
-                    deploy_key = f"deploy_{idx}"
-                    project_path = st.text_input(
-                        "Diretório do projeto (caminho completo)",
-                        key=f"{deploy_key}_path",
-                        placeholder="Ex: C:\\Projetos\\meu-projeto  ou  /home/user/meu-projeto",
-                        help=(
-                            "Cole aqui o caminho da pasta raiz do seu projeto. "
-                            "Os arquivos serão copiados para dentro dela."
-                        ),
-                    )
-
-                    deploy_done_key = f"{agent_id}_{idx}"
-                    already_deployed = st.session_state.deploy_done.get(deploy_done_key)
-
-                    if already_deployed:
-                        st.markdown(
-                            f"""<div class="sf-deploy-success">
-                            ✅ <strong>Instalado com sucesso!</strong><br>
-                            📁 {already_deployed['project_path']}<br>
-                            <small>{already_deployed['message']}</small>
-                            </div>""",
-                            unsafe_allow_html=True,
+                    with tab_deploy:
+                        st.caption(
+                            "Informe o diretório raiz do seu projeto e o Skill Forge "
+                            "copiará os artefatos para os locais corretos."
                         )
-                        st.markdown("**Próximo passo:**")
-                        st.info(already_deployed["instructions"])
-                    else:
+
+                        deploy_key = f"deploy_{idx}"
+                        project_path: str = st.text_input(
+                            "Diretório do projeto (caminho completo)",
+                            key=f"{deploy_key}_path",
+                            placeholder="Ex: C:\\Projetos\\meu-projeto  ou  /home/user/meu-projeto",
+                            help=(
+                                "Cole aqui o caminho da pasta raiz do seu projeto. "
+                                "Os arquivos serão copiados para dentro dela."
+                            ),
+                        )
+
+                        deploy_done_key = f"{agent_id}_{idx}"
+                        already_deployed = st.session_state.deploy_done.get(deploy_done_key)
+
+                        if already_deployed:
+                            st.markdown(
+                                f"""<div class="sf-deploy-success">
+                                ✅ <strong>Instalado com sucesso!</strong><br>
+                                📁 {already_deployed["project_path"]}<br>
+                                <small>{already_deployed["message"]}</small>
+                                </div>""",
+                                unsafe_allow_html=True,
+                            )
+                            st.markdown("**Próximo passo:**")
+                            st.info(already_deployed["instructions"])
+                        else:
+                            if st.button(
+                                f"🚀 Instalar em `{project_path or '...'}`",
+                                key=f"{deploy_key}_btn",
+                                type="primary",
+                                disabled=not project_path.strip(),
+                                use_container_width=False,
+                            ):
+                                with st.spinner("Copiando artefatos..."):
+                                    try:
+                                        deploy_result = client.deploy(
+                                            download_token=item["download_token"],
+                                            target_agent=agent_id,
+                                            project_path=project_path.strip(),
+                                        )
+                                        st.session_state.deploy_done[deploy_done_key] = (
+                                            deploy_result
+                                        )
+                                        st.rerun()
+                                    except Exception as exc:
+                                        st.error(f"❌ Erro ao instalar: {exc}")
+
+                    with tab_opt:
+                        st.caption(
+                            "Envie uma SKILL.md existente para gerar uma versão otimizada com foco em qualidade enterprise, "
+                            "melhorias de token, determinismo e práticas avançadas."
+                        )
+
+                        uploaded_skill = st.file_uploader(
+                            "Upload da sua SKILL.md",
+                            type=["md"],
+                            key=f"step5_opt_file_{idx}",
+                            help="Suba sua skill atual para receber uma versão refinada e otimizada.",
+                        )
+
+                        goal_options: list[str] = [key for key, _ in OPTIMIZATION_GOALS]
+                        default_goals_raw = st.session_state.get("opt_selected_goals", [])
+                        default_goals: list[str] = [
+                            value
+                            for value in default_goals_raw
+                            if isinstance(value, str) and value in goal_options
+                        ]
+
+                        def _goal_label(value: str) -> str:
+                            return OPTIMIZATION_GOAL_LABELS.get(value, value)
+
+                        selected_goals: list[str] = st.multiselect(
+                            "Tipo de melhoria desejada",
+                            options=goal_options,
+                            default=default_goals,
+                            format_func=_goal_label,
+                            key=f"step5_opt_goals_{idx}",
+                            placeholder="Selecione uma ou mais melhorias.",
+                        )
+                        st.session_state["opt_selected_goals"] = selected_goals
+
+                        agent_options = ["__auto__"] + [a["id"] for a in agents]
+                        selected_target = st.selectbox(
+                            "IDE/Agente da skill",
+                            options=agent_options,
+                            index=agent_options.index(st.session_state.opt_target_agent)
+                            if st.session_state.opt_target_agent in agent_options
+                            else 0,
+                            format_func=lambda value: (
+                                "Detectar automaticamente"
+                                if value == "__auto__"
+                                else next((a["label"] for a in agents if a["id"] == value), value)
+                            ),
+                            key=f"step5_opt_target_agent_{idx}",
+                            help="Selecione manualmente se a detecção automática não identificar corretamente.",
+                        )
+                        st.session_state.opt_target_agent = selected_target
+
+                        result_key = f"opt_result_{idx}"
+
                         if st.button(
-                            f"🚀 Instalar em `{project_path or '...'}`",
-                            key=f"{deploy_key}_btn",
+                            "⚙️ Gerar SKILL.md otimizada",
+                            key=f"step5_opt_generate_{idx}",
                             type="primary",
-                            disabled=not project_path.strip(),
-                            use_container_width=False,
                         ):
-                            with st.spinner("Copiando artefatos..."):
+                            if uploaded_skill is None:
+                                st.error("Envie um arquivo SKILL.md para otimizar.")
+                            elif not selected_goals:
+                                st.error("Selecione pelo menos uma melhoria para otimização.")
+                            else:
                                 try:
-                                    deploy_result = client.deploy(
-                                        download_token=item["download_token"],
-                                        target_agent=agent_id,
-                                        project_path=project_path.strip(),
-                                    )
-                                    st.session_state.deploy_done[deploy_done_key] = deploy_result
-                                    st.rerun()
-                                except Exception as exc:
-                                    st.error(f"❌ Erro ao instalar: {exc}")
+                                    skill_markdown = uploaded_skill.getvalue().decode("utf-8")
+                                except UnicodeDecodeError:
+                                    st.error("O arquivo deve estar em UTF-8.")
+                                else:
+                                    with st.status(
+                                        "🧠 Otimizando skill...", expanded=True
+                                    ) as status:
+                                        status.write(
+                                            "Aplicando técnicas de refinamento e boas práticas enterprise..."
+                                        )
+                                        try:
+                                            target_agent = (
+                                                None
+                                                if selected_target == "__auto__"
+                                                else selected_target
+                                            )
+                                            result = client.optimize_skill(
+                                                skill_markdown=skill_markdown,
+                                                goals=selected_goals,
+                                                target_agent=target_agent,
+                                            )
+                                            st.session_state[result_key] = result
+                                            status.update(
+                                                label="✅ SKILL otimizada com sucesso!",
+                                                state="complete",
+                                            )
+                                        except Exception as exc:
+                                            status.update(
+                                                label="❌ Erro na otimização", state="error"
+                                            )
+                                            st.error(f"Erro ao otimizar skill: {exc}")
+
+                        opt_result = st.session_state.get(result_key)
+                        if isinstance(opt_result, dict):
+                            detected = opt_result.get("detected_target_agent")
+                            effective = opt_result.get("effective_target_agent")
+
+                            if detected:
+                                st.caption(f"Detecção automática: `{detected}`")
+                            st.caption(f"Agente efetivo usado na otimização: `{effective}`")
+
+                            applied = opt_result.get("applied_goals", [])
+                            if applied:
+                                labels = [
+                                    OPTIMIZATION_GOAL_LABELS.get(item, item) for item in applied
+                                ]
+                                st.markdown("**Melhorias aplicadas:** " + ", ".join(labels))
+
+                            notes = opt_result.get("quality_notes", [])
+                            if notes:
+                                st.markdown("**Resumo das melhorias técnicas:**")
+                                for note in notes:
+                                    st.markdown(f"- {note}")
+
+                            optimized_markdown = opt_result.get("optimized_markdown", "")
+                            st.download_button(
+                                "⬇️ Baixar SKILL.md otimizada",
+                                data=optimized_markdown.encode("utf-8"),
+                                file_name="SKILL.optimized.md",
+                                mime="text/markdown",
+                                key=f"step5_opt_download_{idx}",
+                                use_container_width=True,
+                            )
+
+                            with st.expander("👁️ Preview da SKILL.md otimizada"):
+                                st.code(optimized_markdown, language="markdown")
 
                     st.divider()
 
