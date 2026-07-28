@@ -97,10 +97,20 @@ div.stLinkButton > a {
     border-radius: 8px !important;
     font-weight: 600;
 }
+div.stLinkButton > a p,
+div.stLinkButton > a span,
+div.stLinkButton > a div {
+    color: #f8fafc !important;
+}
 div.stLinkButton > a:hover {
     background: #2d5a8e !important;
     color: #ffffff !important;
     border-color: #2d5a8e !important;
+}
+div.stLinkButton > a:hover p,
+div.stLinkButton > a:hover span,
+div.stLinkButton > a:hover div {
+    color: #ffffff !important;
 }
 
 /* Header */
