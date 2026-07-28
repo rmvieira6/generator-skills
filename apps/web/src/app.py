@@ -89,28 +89,28 @@ div[data-baseweb="select"] > div {
     color: #0f172a;
 }
 
-/* Botão de link (Baixar pacote) com contraste explícito */
-div.stLinkButton > a {
-    background: #1e3a5f !important;
-    color: #f8fafc !important;
-    border: 1px solid #1e3a5f !important;
+/* Botão de download (Baixar pacote) com contraste explícito */
+div.stDownloadButton > button {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: 8px !important;
-    font-weight: 600;
+    font-weight: 600 !important;
 }
-div.stLinkButton > a p,
-div.stLinkButton > a span,
-div.stLinkButton > a div {
-    color: #f8fafc !important;
+div.stDownloadButton > button p,
+div.stDownloadButton > button span,
+div.stDownloadButton > button div {
+    color: #0f172a !important;
 }
-div.stLinkButton > a:hover {
-    background: #2d5a8e !important;
-    color: #ffffff !important;
-    border-color: #2d5a8e !important;
+div.stDownloadButton > button:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
 }
-div.stLinkButton > a:hover p,
-div.stLinkButton > a:hover span,
-div.stLinkButton > a:hover div {
-    color: #ffffff !important;
+div.stDownloadButton > button:hover p,
+div.stDownloadButton > button:hover span,
+div.stDownloadButton > button:hover div {
+    color: #0f172a !important;
 }
 
 /* Header */
@@ -167,6 +167,59 @@ div.stLinkButton > a:hover div {
     transition: border-color 0.15s;
 }
 .sf-agent-card:hover { border-color: #1e3a5f; }
+
+/* Card clicável do passo 1 */
+.stButton > button[kind="tertiary"] {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    min-height: 5.5rem !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    white-space: pre-wrap !important;
+    padding: 0.9rem 1rem !important;
+}
+.stButton > button[kind="tertiary"] > div {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+.stButton > button[kind="tertiary"]:hover {
+    border-color: #1e3a5f !important;
+    background: #eef5ff !important;
+}
+.stButton > button[kind="tertiary"] p,
+.stButton > button[kind="tertiary"] span,
+.stButton > button[kind="tertiary"] div {
+    color: #0f172a !important;
+}
+
+.sf-field-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.sf-info-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: help;
+    border: 1px solid #93c5fd;
+}
 
 /* Alerta de cache */
 .sf-cache-badge {
@@ -248,6 +301,17 @@ STEP_LABELS = [
     "5 · Instalar",
 ]
 
+AGENT_ICONS: dict[str, str] = {
+    "claude": "✳️",
+    "kiro": "🧭",
+    "copilot": "🐙",
+    "cursor": "⌨️",
+    "vertex_ai": "☁️",
+    "windsurf": "🌊",
+    "generic_openai": "◎",
+    "fabric_pyspark_notebook": "🧵",
+}
+
 FIELD_HELP: dict[str, str] = {
     "agents": (
         "Escolha para quais agentes o artefato será gerado. "
@@ -265,6 +329,31 @@ FIELD_HELP: dict[str, str] = {
     "connector_type": "Tipo da fonte de contexto que o agente deve consultar.",
     "material_name": "Nome curto para identificar o material.",
     "material_description": "Explique por que este material é importante para a geração.",
+}
+
+METADATA_PLACEHOLDERS: dict[str, str] = {
+    "path": "Ex: docs/arquitetura.md ou C:\\Projetos\\meu-projeto\\src",
+    "host": "Ex: servidor.empresa.com",
+    "port": "Ex: 5432",
+    "database": "Ex: pedidos_db",
+    "schema": "Ex: public",
+    "username": "Ex: usuario_leitura",
+    "password": "Ex: senha temporaria para teste",
+    "base_url": "Ex: https://api.empresa.com",
+    "endpoint": "Ex: https://api.empresa.com/graphql",
+    "auth_type": "Ex: bearer",
+    "token": "Ex: token temporario de acesso",
+    "provider": "Ex: s3, gcs ou azure",
+    "bucket": "Ex: arquivos-projeto",
+    "region": "Ex: us-east-1",
+    "access_key": "Ex: chave temporaria de acesso",
+    "secret_key": "Ex: segredo temporario da chave",
+    "folder_id": "Ex: ID da pasta compartilhada",
+    "service_account_json": "Ex: JSON da service account para teste",
+    "workspace": "Ex: workspace-financeiro",
+    "space_key": "Ex: ENG",
+    "url": "Ex: https://github.com/empresa/repositorio",
+    "branch": "Ex: main",
 }
 
 METADATA_HELP: dict[str, str] = {
@@ -301,6 +390,7 @@ def initialize_state() -> None:
         "materials": [],
         "result": [],
         "selected_agents": [],
+        "step1_agents": [],
         "skill_name": "",
         "objective": "",
         "domain": "backend",
@@ -325,10 +415,33 @@ def clear_for_new_run() -> None:
     for key in [
         "step", "result", "materials", "selected_agents", "skill_name",
         "objective", "domain", "autonomy_level", "constraints", "description",
-        "deploy_item_idx", "deploy_done",
+        "deploy_item_idx", "deploy_done", "step1_agents",
     ]:
         st.session_state.pop(key, None)
     st.rerun()
+
+
+def sync_selected_agents() -> None:
+    st.session_state.selected_agents = list(st.session_state.step1_agents)
+
+
+def select_agent(agent_id: str) -> None:
+    selected = list(st.session_state.get("step1_agents", []))
+    if agent_id not in selected:
+        selected.append(agent_id)
+    st.session_state.step1_agents = selected
+    st.session_state.selected_agents = selected
+
+
+def render_info_label(label: str, help_text: str) -> None:
+    tooltip = help_text.replace('"', '&quot;')
+    st.markdown(
+        (
+            f"<div class='sf-field-label'>{label} "
+            f"<span class='sf-info-dot' title=\"{tooltip}\">i</span></div>"
+        ),
+        unsafe_allow_html=True,
+    )
 
 
 initialize_state()
@@ -391,27 +504,38 @@ with st.container(border=True):
             "Escolha para qual IDE ou ambiente a skill será gerada. "
             "Pode selecionar mais de um."
         )
+        st.info(
+            "Artefato é o arquivo final que o sistema gera para você usar no agente escolhido, "
+            "como um SKILL.md, instruções do Copilot ou regras do Cursor."
+        )
 
         # Grade de cards informativos
         agent_cols = st.columns(2)
         for idx, agent in enumerate(agents):
             with agent_cols[idx % 2]:
-                files_str = ", ".join(f"`{f}`" for f in agent.get("files", []))
-                st.markdown(
-                    f"""<div class="sf-agent-card">
-                    <strong>{agent['label']}</strong><br>
-                    <small style="color:#64748b">Arquivo(s): {files_str}</small>
-                    </div>""",
-                    unsafe_allow_html=True,
+                files_str = ", ".join(agent.get("files", [])) or "nao informado"
+                is_selected = agent["id"] in st.session_state.selected_agents
+                agent_icon = AGENT_ICONS.get(agent["id"], "🛠️")
+                st.button(
+                    (
+                        f"{'✓ ' if is_selected else ''}{agent_icon} {agent['label']}\n"
+                        f"Arquivo(s): {files_str}"
+                    ),
+                    key=f"step1_card_{agent['id']}",
+                    type="tertiary",
+                    use_container_width=True,
+                    on_click=select_agent,
+                    args=(agent["id"],),
                 )
 
         st.session_state.selected_agents = st.multiselect(
             "Agentes selecionados",
             options=[a["id"] for a in agents],
             format_func=lambda v: next((a["label"] for a in agents if a["id"] == v), v),
-            default=st.session_state.selected_agents,
             key="step1_agents",
             help=FIELD_HELP["agents"],
+            placeholder="Clique nos cards acima ou escolha aqui um ou mais agentes.",
+            on_change=sync_selected_agents,
         )
 
         _, right = st.columns([3, 1])
@@ -430,32 +554,40 @@ with st.container(border=True):
 # ---------------------------------------------------------------------------
     elif st.session_state.step == 2:
         st.subheader("Passo 2 — Descrever o artefato")
-        st.caption("Preencha as informações da skill que será gerada.")
+        st.caption("Preencha as informações da instrução que será gerada para o agente trabalhar do jeito que você precisa.")
+        st.info(
+            "Pense neste passo como um briefing. Quanto mais claro você for sobre o objetivo, limites e contexto, "
+            "melhor tende a ficar o artefato final."
+        )
 
         col_a, col_b = st.columns(2)
         with col_a:
+            render_info_label("Nome da skill *", FIELD_HELP["skill_name"])
             st.session_state.skill_name = st.text_input(
                 "Nome da skill *",
                 st.session_state.skill_name,
                 key="step2_skill_name",
-                help=FIELD_HELP["skill_name"],
-                placeholder="Ex: Revisor Backend Node",
+                placeholder="Ex: Revisor de Pull Request para API de Pedidos",
+                label_visibility="collapsed",
             )
+            render_info_label("Domínio *", FIELD_HELP["domain"])
             st.session_state.domain = st.text_input(
                 "Domínio *",
                 st.session_state.domain,
                 key="step2_domain",
-                help=FIELD_HELP["domain"],
-                placeholder="Ex: backend, dados, QA",
+                placeholder="Ex: backend, suporte, financeiro, dados ou RH",
+                label_visibility="collapsed",
             )
         with col_b:
+            render_info_label("Objetivo (1 frase) *", FIELD_HELP["objective"])
             st.session_state.objective = st.text_input(
                 "Objetivo (1 frase) *",
                 st.session_state.objective,
                 key="step2_objective",
-                help=FIELD_HELP["objective"],
-                placeholder="Ex: Revisar PRs com foco em segurança",
+                placeholder="Ex: Ajudar a revisar mudanças no código e apontar riscos antes do deploy",
+                label_visibility="collapsed",
             )
+            render_info_label("Nível de autonomia *", FIELD_HELP["autonomy_level"])
             st.session_state.autonomy_level = st.selectbox(
                 "Nível de autonomia *",
                 options=["suggest_only", "apply_changes", "run_commands"],
@@ -465,23 +597,28 @@ with st.container(border=True):
                 if st.session_state.autonomy_level in ["suggest_only", "apply_changes", "run_commands"]
                 else 0,
                 key="step2_autonomy",
-                help=FIELD_HELP["autonomy_level"],
+                label_visibility="collapsed",
             )
+        render_info_label("Restrições / Guardrails", FIELD_HELP["constraints"])
         st.session_state.constraints = st.text_area(
             "Restrições / Guardrails",
             st.session_state.constraints,
             key="step2_constraints",
-            help=FIELD_HELP["constraints"],
-            placeholder="Ex: não mexer em migrations, não alterar contratos de API",
+            placeholder="Ex: não alterar banco de dados, não apagar arquivos, não executar comandos sem explicar antes",
             height=80,
+            label_visibility="collapsed",
         )
+        render_info_label("Descrição de alto nível *", FIELD_HELP["description"])
         st.session_state.description = st.text_area(
             "Descrição de alto nível *",
             st.session_state.description,
             height=160,
             key="step2_description",
-            help=FIELD_HELP["description"],
-            placeholder="Descreva detalhadamente o que a skill deve fazer (mín. 20 caracteres).",
+            placeholder=(
+                "Explique em linguagem simples o que o agente deve fazer, quando deve agir, "
+                "que tipo de resposta você espera e o que ele deve evitar."
+            ),
+            label_visibility="collapsed",
         )
 
         is_valid = (
@@ -515,6 +652,10 @@ with st.container(border=True):
             "Materiais são as fontes de informação que o agente deve consultar. "
             "Você pode adicionar vários."
         )
+        st.info(
+            "Se você tiver documentos, APIs, repositórios ou arquivos que ajudam a explicar o trabalho, "
+            "cadastre aqui. Se não tiver, você pode continuar sem adicionar materiais."
+        )
 
         connector_ids = [c["id"] for c in connectors]
         selected_connector = st.selectbox(
@@ -530,14 +671,14 @@ with st.container(border=True):
                 "Nome do material",
                 key="step3_name",
                 help=FIELD_HELP["material_name"],
-                placeholder="Ex: API de Pedidos",
+                placeholder="Ex: Manual da API de Pedidos ou Documentação do sistema financeiro",
             )
         with col_b:
             description = st.text_area(
                 "Por que este material importa? *",
                 key="step3_description",
                 help=FIELD_HELP["material_description"],
-                placeholder="Ex: Contém os contratos dos endpoints de pedidos",
+                placeholder="Ex: Esse material explica as regras do sistema e ajuda o agente a responder com mais precisão",
                 height=80,
             )
 
@@ -552,6 +693,7 @@ with st.container(border=True):
                         field,
                         key=f"step3_field_{field}",
                         help=METADATA_HELP.get(field, "Campo de configuração do conector."),
+                        placeholder=METADATA_PLACEHOLDERS.get(field, "Preencha com a informacao correspondente."),
                     )
         else:
             metadata = {}
@@ -688,23 +830,25 @@ with st.container(border=True):
                     files_list = ", ".join(f"`{f}`" for f in item.get("generated_files", []))
                     st.caption(f"Arquivos: {files_list}")
 
-                    col_dl, col_prev, col_prompt = st.columns(3)
-                    with col_dl:
-                        zip_bytes = client.download_package(item["download_token"])
-                        st.download_button(
-                            "⬇️ Baixar pacote (.zip)",
-                            data=zip_bytes,
-                            file_name="skill-forge-artifacts.zip",
-                            mime="application/zip",
-                            key=f"download_{idx}",
-                            use_container_width=True,
-                        )
-                    with col_prev:
-                        with st.expander("👁️ Preview SKILL.md"):
-                            st.code(item.get("preview_markdown", ""), language="markdown")
-                    with col_prompt:
-                        with st.expander("💬 Prompt sugerido"):
-                            st.code(item.get("suggested_prompt", ""), language="markdown")
+                    zip_bytes = client.download_package(item["download_token"])
+                    st.download_button(
+                        "⬇️ Baixar pacote (.zip)",
+                        data=zip_bytes,
+                        file_name="skill-forge-artifacts.zip",
+                        mime="application/zip",
+                        key=f"download_{idx}",
+                        use_container_width=True,
+                    )
+                    st.caption(
+                        "O .zip pode conter arquivos dentro de pastas ocultas, como .github, .kiro, .cursor ou outras. "
+                        "Se nao enxergar tudo ao extrair, habilite a visualizacao de arquivos e pastas ocultas no seu sistema."
+                    )
+
+                    with st.expander("👁️ Preview SKILL.md"):
+                        st.code(item.get("preview_markdown", ""), language="markdown")
+
+                    with st.expander("💬 Prompt sugerido"):
+                        st.code(item.get("suggested_prompt", ""), language="markdown")
 
                     # -------------------------------------------------------
                     # Sub-wizard de instalação automatizada
