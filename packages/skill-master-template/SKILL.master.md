@@ -12,7 +12,7 @@ graph LR
     MAT --> REG[Regras]
     REG --> EXEC[Execução]
     REG --> ANTI[Anti-Duplicação]
-    REG --> SENIOR[Padrões Sênior]
+    REG --> ENTERPRISE[Padrões Enterprise]
     EXEC --> OUT[Saída Esperada]
 ```
 
@@ -49,7 +49,7 @@ graph LR
 6. Registre ao final: data, resumo e arquivos tocados em `IMPLEMENTATION_LOG.md`.
 7. **Nunca gere código morto** ou implementações por precaução.
 
-## Padrões Sênior → [[Padrões Sênior]]
+## Padrões Enterprise → [[Padrões Enterprise]]
 - Preservar separação de camadas (domínio / aplicação / infraestrutura).
 - Nomenclatura consistente e autoexplicativa.
 - Testes automatizados para nova lógica de negócio.

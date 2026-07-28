@@ -444,6 +444,16 @@ def render_info_label(label: str, help_text: str) -> None:
     )
 
 
+def build_tooltip(help_text: str, placeholder: str | None = None) -> str:
+    if placeholder:
+        return f"{help_text} Exemplo: {placeholder}"
+    return help_text
+
+
+def humanize_field_name(field: str) -> str:
+    return field.replace("_", " ").capitalize()
+
+
 initialize_state()
 
 # ---------------------------------------------------------------------------
@@ -505,8 +515,8 @@ with st.container(border=True):
             "Pode selecionar mais de um."
         )
         st.info(
-            "Artefato é o arquivo final que o sistema gera para você usar no agente escolhido, "
-            "como um SKILL.md, instruções do Copilot ou regras do Cursor."
+            "Aqui aparecem as IDEs e os agentes disponíveis para geração. "
+            "Em cada card, você vê também a pasta ou o arquivo onde a skill será criada para aquele destino."
         )
 
         # Grade de cards informativos
@@ -556,6 +566,8 @@ with st.container(border=True):
         st.subheader("Passo 2 — Descrever o artefato")
         st.caption("Preencha as informações da instrução que será gerada para o agente trabalhar do jeito que você precisa.")
         st.info(
+            "Artefato é o arquivo final que o sistema gera para você usar no agente escolhido, "
+            "como um SKILL.md, instruções do Copilot ou regras do Cursor. "
             "Pense neste passo como um briefing. Quanto mais claro você for sobre o objetivo, limites e contexto, "
             "melhor tende a ficar o artefato final."
         )
@@ -658,28 +670,48 @@ with st.container(border=True):
         )
 
         connector_ids = [c["id"] for c in connectors]
+        connector_options = ", ".join(c["label"] for c in connectors)
+        render_info_label(
+            "Tipo de conector",
+            build_tooltip(
+                FIELD_HELP["connector_type"],
+                f"Opcoes disponiveis: {connector_options}",
+            ),
+        )
         selected_connector = st.selectbox(
             "Tipo de conector",
             options=connector_ids,
             format_func=lambda v: next((c["label"] for c in connectors if c["id"] == v), v),
             key="step3_connector",
-            help=FIELD_HELP["connector_type"],
+            label_visibility="collapsed",
         )
         col_a, col_b = st.columns(2)
         with col_a:
+            material_name_placeholder = "Ex: Manual da API de Pedidos ou Documentação do sistema financeiro"
+            render_info_label(
+                "Nome do material",
+                build_tooltip(FIELD_HELP["material_name"], material_name_placeholder),
+            )
             name = st.text_input(
                 "Nome do material",
                 key="step3_name",
-                help=FIELD_HELP["material_name"],
-                placeholder="Ex: Manual da API de Pedidos ou Documentação do sistema financeiro",
+                placeholder=material_name_placeholder,
+                label_visibility="collapsed",
             )
         with col_b:
+            material_description_placeholder = (
+                "Ex: Esse material explica as regras do sistema e ajuda o agente a responder com mais precisão"
+            )
+            render_info_label(
+                "Por que este material importa? *",
+                build_tooltip(FIELD_HELP["material_description"], material_description_placeholder),
+            )
             description = st.text_area(
                 "Por que este material importa? *",
                 key="step3_description",
-                help=FIELD_HELP["material_description"],
-                placeholder="Ex: Esse material explica as regras do sistema e ajuda o agente a responder com mais precisão",
+                placeholder=material_description_placeholder,
                 height=80,
+                label_visibility="collapsed",
             )
 
         fields = next((c["fields"] for c in connectors if c["id"] == selected_connector), [])
@@ -689,11 +721,19 @@ with st.container(border=True):
             metadata: dict[str, str] = {}
             for i, field in enumerate(fields):
                 with meta_cols[i % 3]:
+                    field_placeholder = METADATA_PLACEHOLDERS.get(field, "Preencha com a informacao correspondente.")
+                    render_info_label(
+                        humanize_field_name(field),
+                        build_tooltip(
+                            METADATA_HELP.get(field, "Campo de configuração do conector."),
+                            field_placeholder,
+                        ),
+                    )
                     metadata[field] = st.text_input(
                         field,
                         key=f"step3_field_{field}",
-                        help=METADATA_HELP.get(field, "Campo de configuração do conector."),
-                        placeholder=METADATA_PLACEHOLDERS.get(field, "Preencha com a informacao correspondente."),
+                        placeholder=field_placeholder,
+                        label_visibility="collapsed",
                     )
         else:
             metadata = {}

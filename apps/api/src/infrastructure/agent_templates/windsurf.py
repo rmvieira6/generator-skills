@@ -1,7 +1,7 @@
 from src.domain.entities import GeneratedFile, Material, Project
 from src.infrastructure.agent_templates.common import (
     ANTI_DUPLICATION_BLOCK,
-    SENIOR_RULES_BLOCK,
+    ENTERPRISE_RULES_BLOCK,
     TOKEN_ECONOMY_BLOCK,
     materials_table,
     skill_graph,
@@ -33,7 +33,7 @@ def render(project: Project, materials: list[Material], generated_core: str) -> 
 
 {ANTI_DUPLICATION_BLOCK}
 
-{SENIOR_RULES_BLOCK}
+{ENTERPRISE_RULES_BLOCK}
 
 ## Diretrizes
 {generated_core}

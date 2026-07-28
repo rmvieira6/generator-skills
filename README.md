@@ -2,7 +2,7 @@
 
 Gerador padronizado de `SKILL.md` e instruções de agente para IDEs e plataformas de IA.
 Produz artefatos prontos para uso no Claude, Kiro, Copilot, Cursor, Windsurf, Vertex AI,
-OpenAI Assistants e Microsoft Fabric — com economia de tokens, qualidade sênior e deploy automático.
+OpenAI Assistants e Microsoft Fabric — com economia de tokens, qualidade Enterprise e deploy automático.
 
 ---
 
@@ -107,7 +107,7 @@ Todos os artefatos seguem automaticamente:
 - **Wikilinks** — `[[Seção]]` para referência sem repetição de conteúdo
 - **Token Economy** — progressive disclosure, linguagem telegráfica, zero redundância
 - **Protocolo Anti-Duplicação** — diff mínimo, IMPLEMENTATION_LOG.md, sem código morto
-- **Padrões Sênior** — separação de camadas, testes, tratamento de erro, segurança
+- **Padrões Enterprise** — separação de camadas, testes, tratamento de erro, segurança
 
 ---
 

@@ -1,7 +1,7 @@
 from src.domain.entities import GeneratedFile, Material, Project
 from src.infrastructure.agent_templates.common import (
     ANTI_DUPLICATION_BLOCK,
-    SENIOR_RULES_BLOCK,
+    ENTERPRISE_RULES_BLOCK,
     TOKEN_ECONOMY_BLOCK,
     materials_table,
     skill_graph,
@@ -37,7 +37,7 @@ version: 1.0.0
 
 {ANTI_DUPLICATION_BLOCK}
 
-{SENIOR_RULES_BLOCK}
+{ENTERPRISE_RULES_BLOCK}
 
 ## Regras Fabric PySpark → [[Regras Fabric]]
 - Células pequenas e reprodutíveis; cada célula com propósito único.

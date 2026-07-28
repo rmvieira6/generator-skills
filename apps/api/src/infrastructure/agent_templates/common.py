@@ -25,8 +25,8 @@ TOKEN_ECONOMY_BLOCK = """\
 - Constraints como negativos explícitos: "NÃO faça X".\
 """
 
-SENIOR_RULES_BLOCK = """\
-## Padrões Sênior → [[Padrões Sênior]]
+ENTERPRISE_RULES_BLOCK = """\
+## Padrões Enterprise → [[Padrões Enterprise]]
 - Separação de camadas: domínio / aplicação / infraestrutura.
 - Nomenclatura consistente e autoexplicativa.
 - Testes automatizados para nova lógica de negócio.
@@ -54,8 +54,8 @@ def materials_table(materials: list[Material]) -> str:
     return "\n".join(lines)
 
 
-def senior_rules() -> str:
-    return SENIOR_RULES_BLOCK
+def enterprise_rules() -> str:
+    return ENTERPRISE_RULES_BLOCK
 
 
 def usage_prompt(project: Project) -> str:
