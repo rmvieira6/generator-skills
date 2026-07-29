@@ -71,6 +71,7 @@ Ou use os scripts prontos:
 .\generator-skills.ps1   # inicia backend + frontend no mesmo processo
 .\start_api.ps1   # inicia o backend
 .\start_web.ps1   # inicia o frontend
+.\start_dev.ps1   # inicia backend e frontend em terminais separados (RECOMENDADO)
 ```
 
 Para o Streamlit Cloud, use o arquivo [`.laucher.py`](.laucher.py) como entrypoint da aplicação. Ele sobe a API em porta livre e executa o front-end no mesmo processo do Streamlit, sem abrir navegador local ou depender de `localhost` fixo.
@@ -78,6 +79,56 @@ Para o Streamlit Cloud, use o arquivo [`.laucher.py`](.laucher.py) como entrypoi
 No Streamlit Cloud, cadastre suas chaves em `Settings > Secrets` do app. O launcher lê esses segredos e repassa para a API embutida, então você não precisa subir `.env` para a branch.
 
 Para encerrar o launcher unico, use `Ctrl+C` na mesma janela.
+
+---
+
+## Desenvolvimento Local vs. Streamlit Cloud
+
+### ✅ Desenvolvimento Local (Recomendado)
+
+Use o script `start_dev.ps1` para iniciar tudo automaticamente:
+
+```powershell
+# Inicia API na porta 8000 e Streamlit na porta 8501
+.\start_dev.ps1
+
+# Ou com uma porta diferente (ex: 58027)
+.\start_dev.ps1 -ApiPort 58027
+```
+
+Este script:
+1. Configura automaticamente `.streamlit/secrets.toml` com a porta correta
+2. Abre dois terminais: um para a API, outro para o Streamlit
+3. Exibe links de acesso e dicas de troubleshooting
+
+### ☁️ Streamlit Cloud
+
+Para rodar na nuvem, siga [STREAMLIT_CLOUD_SETUP.md](STREAMLIT_CLOUD_SETUP.md).
+
+**Resumo:**
+1. Hospede a API em um servidor remoto (AWS, Azure, GCP, etc)
+2. Configure `skill_forge_api_url` em `Settings > Secrets` do Streamlit Cloud
+3. A aplicação Streamlit se conectará à API remota automaticamente
+
+### ⚠️ Erro 404 ao otimizar
+
+Se receber `404 Not Found for url: http://127.0.0.1:58027/api/generation/optimize-skill`:
+
+1. **Verifique a porta da API:**
+   ```powershell
+   # Terminal 1 — API
+   .\start_api.ps1
+   # Procure pela linha: "Iniciando Skill Forge API em http://localhost:XXXX"
+   ```
+
+2. **Atualize o arquivo de secrets:**
+   ```toml
+   # apps/web/.streamlit/secrets.toml
+   skill_forge_api_url = "http://localhost:XXXX"  # Use a porta correta
+   ```
+
+3. **Reinicie o Streamlit:**
+   - Terminal 2: `Ctrl+R` ou feche e rode novamente
 
 ---
 

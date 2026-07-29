@@ -8,7 +8,19 @@ import requests
 
 class SkillForgeApiClient:
     def __init__(self, base_url: str | None = None) -> None:
-        self.base_url = base_url or os.getenv("SKILL_FORGE_API_URL", "http://localhost:8000")
+        # Tenta obter a URL em order: parâmetro > env var > secrets do Streamlit > default local
+        if base_url:
+            self.base_url = base_url
+        elif os.getenv("SKILL_FORGE_API_URL"):
+            self.base_url = os.getenv("SKILL_FORGE_API_URL")
+        else:
+            # Tenta usar secrets do Streamlit se disponível
+            try:
+                import streamlit as st
+                self.base_url = st.secrets.get("skill_forge_api_url", "http://localhost:8000")
+            except (ImportError, AttributeError, FileNotFoundError):
+                # Fallback para localhost se Streamlit não estiver disponível
+                self.base_url = "http://localhost:8000"
 
     def catalog(self) -> dict[str, Any]:
         response = requests.get(f"{self.base_url}/api/projects/catalog", timeout=30)
