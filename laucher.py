@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import atexit
+import hashlib
+import json
 import os
 import runpy
 import socket
@@ -25,6 +27,23 @@ def _find_free_port() -> int:
         return sock.getsockname()[1]
 
 
+def _api_fingerprint() -> str:
+    digest = hashlib.sha256()
+    watched_paths = [
+        ROOT / "laucher.py",
+        ROOT / "apps" / "api" / "pyproject.toml",
+    ]
+    watched_paths.extend(sorted((ROOT / "apps" / "api" / "src").rglob("*.py")))
+
+    for path in watched_paths:
+        stat = path.stat()
+        digest.update(str(path.relative_to(ROOT)).encode("utf-8"))
+        digest.update(str(stat.st_mtime_ns).encode("utf-8"))
+        digest.update(str(stat.st_size).encode("utf-8"))
+
+    return digest.hexdigest()
+
+
 def _wait_for_health(base_url: str, timeout_seconds: float = 30.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     health_url = f"{base_url}/health"
@@ -40,6 +59,31 @@ def _wait_for_health(base_url: str, timeout_seconds: float = 30.0) -> None:
     raise RuntimeError(f"API nao respondeu em {health_url} dentro de {timeout_seconds:.0f}s")
 
 
+def _wait_for_route(base_url: str, route_path: str, timeout_seconds: float = 30.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    openapi_url = f"{base_url}/openapi.json"
+
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(openapi_url, timeout=2) as response:
+                if response.status != 200:
+                    time.sleep(0.5)
+                    continue
+                payload = json.loads(response.read().decode("utf-8"))
+                paths = payload.get("paths", {})
+                if route_path in paths:
+                    return
+        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
+            time.sleep(0.5)
+            continue
+
+        time.sleep(0.5)
+
+    raise RuntimeError(
+        f"API subiu sem expor a rota obrigatoria {route_path} em {openapi_url}"
+    )
+
+
 def _stop_process(process: subprocess.Popen[str]) -> None:
     if process.poll() is not None:
         return
@@ -53,7 +97,8 @@ def _stop_process(process: subprocess.Popen[str]) -> None:
 
 
 @st.cache_resource(show_spinner=False)
-def _start_api() -> tuple[subprocess.Popen[str], str]:
+def _start_api(api_fingerprint: str) -> tuple[subprocess.Popen[str], str]:
+    del api_fingerprint
     port = _find_free_port()
     base_url = f"http://127.0.0.1:{port}"
     env = os.environ.copy()
@@ -81,11 +126,12 @@ def _start_api() -> tuple[subprocess.Popen[str], str]:
     )
     atexit.register(_stop_process, process)
     _wait_for_health(base_url)
+    _wait_for_route(base_url, "/api/generation/optimize-skill")
     return process, base_url
 
 
 def main() -> None:
-    _, base_url = _start_api()
+    _, base_url = _start_api(_api_fingerprint())
     os.environ["SKILL_FORGE_API_URL"] = base_url
 
     web_src = str(WEB_SRC_DIR)
