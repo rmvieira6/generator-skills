@@ -260,13 +260,27 @@ div.stDownloadButton > button:hover div {
 .stButton > button[kind="primary"] {
     background: #1e3a5f !important;
     color: #f8fafc !important;
+    border: 1px solid #1e3a5f !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
     padding: 0.5rem 1.5rem !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 .stButton > button[kind="primary"]:hover {
     background: #2d5a8e !important;
+    border-color: #1e3a5f !important;
     color: #ffffff !important;
+}
+.stButton > button[kind="primary"]:focus,
+.stButton > button[kind="primary"]:focus-visible,
+.stButton > button[kind="primary"]:active {
+    border-color: #1e3a5f !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+.stButton > button[kind="primary"]:disabled {
+    border-color: #1e3a5f !important;
 }
 
 /* Botões padrão (ex.: Voltar) com texto claro */
@@ -441,12 +455,10 @@ def initialize_state() -> None:
 
 def go_to(step: int) -> None:
     st.session_state.step = step
-    st.rerun()
 
 
 def go_to_flow(flow: str) -> None:
     st.session_state.entry_flow = flow
-    st.rerun()
 
 
 def clear_for_new_run() -> None:
