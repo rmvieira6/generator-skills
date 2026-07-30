@@ -1,10 +1,8 @@
-# ============================================================================
+
 # Configuração para Streamlit Cloud
-# ============================================================================
-#
-# Este arquivo contém instruções para deploy na Streamlit Cloud
-#
-# ============================================================================
+
+# Instruções para deploy na Streamlit Cloud
+
 
 ## 📋 Checklist de Deploy
 
