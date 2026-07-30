@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     SKILL_MASTER_TEMPLATE_PATH: str = "packages/skill-master-template/SKILL.master.md"
 
     RETRY_ATTEMPTS: int = Field(default=3, ge=1, le=5)
+    SAI_LIBRARY_CONTINUATION_ATTEMPTS: int = Field(default=2, ge=0, le=5)
 
     @field_validator("SAI_LIBRARY_API_KEY", "SAI_LIBRARY_TEMPLATE_ID", mode="before")
     @classmethod
